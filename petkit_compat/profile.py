@@ -18,7 +18,7 @@ def load_profile(path: Path) -> dict[str, Any]:
         safe_fields = http["safe_form_fields"]
         safe_state_fields = http["safe_state_fields"]
         ota_offer = http["ota_offer"]
-        base_fixture = profile["fixtures"]["base"]
+        fixtures = profile["fixtures"]
         softap = profile["softap"]
         keys = softap["keys"]
         payload_fields = softap["payload_fields"]
@@ -45,10 +45,11 @@ def load_profile(path: Path) -> dict[str, Any]:
         isinstance(item, str) for item in safe_state_fields
     ):
         raise ValueError("safe_state_fields must be a list of strings")
-    if not isinstance(base_fixture, str) or not base_fixture:
-        raise ValueError("fixtures.base must be a non-empty relative path")
-    if Path(base_fixture).is_absolute() or ".." in Path(base_fixture).parts:
-        raise ValueError("fixtures.base must stay inside the device directory")
+    if not isinstance(fixtures, list) or not fixtures or not all(
+        isinstance(item, str) and item and not Path(item).is_absolute()
+        for item in fixtures
+    ):
+        raise ValueError("fixtures must be a non-empty list of relative paths")
     if not isinstance(ota_offer, dict):
         raise ValueError("http.ota_offer must be an object")
     for key in ("firmware_id", "module_version"):

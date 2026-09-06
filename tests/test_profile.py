@@ -58,10 +58,10 @@ class ProfileTest(unittest.TestCase):
                 )
             )
 
-    def test_rejects_unsafe_base_fixture_path(self) -> None:
-        with self.assertRaisesRegex(ValueError, "inside the device directory"):
+    def test_rejects_absolute_fixture_path(self) -> None:
+        with self.assertRaisesRegex(ValueError, "relative paths"):
             self.load_changed(
-                lambda profile: profile["fixtures"].update(base="../private.json")
+                lambda profile: profile.update(fixtures=["/private.json"])
             )
 
 

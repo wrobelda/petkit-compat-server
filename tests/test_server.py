@@ -36,8 +36,7 @@ class ServerTest(unittest.TestCase):
             / "esp8266"
             / "nonos_v2"
             / "fresh-element-mini"
-            / "fixtures"
-            / "safe-bootstrap.json"
+            / "fixtures.json"
         )
         cls.profile = MODULE.load_profile(
             ROOT

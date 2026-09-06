@@ -1,8 +1,9 @@
 {
   "name": "petkit-fresh-element-mini",
-  "fixtures": {
-    "base": "fixtures/safe-bootstrap.json"
-  },
+  "fixtures": [
+    "../../../../fixtures.json",
+    "fixtures.json"
+  ],
   "firmware": {
     "format": "esp8266-nonos-v2",
     "flash_size": 2097152,

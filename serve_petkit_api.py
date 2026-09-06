@@ -381,8 +381,14 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
         profile = load_profile(args.profile)
-        fixture_path = args.fixtures or args.profile.parent / profile["fixtures"]["base"]
-        fixtures = load_fixtures(fixture_path)
+        fixture_paths = (
+            [args.fixtures]
+            if args.fixtures
+            else [args.profile.parent / path for path in profile["fixtures"]]
+        )
+        fixtures: dict[str, dict[str, Any]] = {}
+        for fixture_path in fixture_paths:
+            fixtures.update(load_fixtures(fixture_path))
     except ValueError as error:
         parser.error(str(error))
     ota_check_route = profile["http"]["ota_check_route"]
@@ -437,7 +443,7 @@ def main() -> None:
         args.host,
         args.port,
         profile["name"],
-        fixture_path,
+        ", ".join(str(path) for path in fixture_paths),
     )
     try:
         server.serve_forever()

@@ -21,8 +21,8 @@ verification.
 
 - [`profile.json`](profile.json) defines HTTP routes, log-safe fields, and the
   SoftAP protocol.
-- [`fixtures/safe-bootstrap.json`](fixtures/safe-bootstrap.json) is a synthetic
-  startup fixture that offers no firmware update.
+- [`fixtures.json`](fixtures.json) defines the synthetic responses used by this
+  device profile when no OTA image is supplied.
 - [Stock OTA research](OTA-RESEARCH.md) documents the update protocol and image
   format.
 - [Hardware](HARDWARE.md) documents the board, flash layout, and serial pads;
