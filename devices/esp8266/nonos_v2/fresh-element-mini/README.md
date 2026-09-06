@@ -76,8 +76,10 @@ python3 devices/esp8266/nonos_v2/fresh-element-mini/tools/make_ota_offer.py \
 ```
 
 The generated fixture contains `${OTA_IMAGE_URL}` instead of a computer
-address. The `--ota-url` argument below supplies the address when the server
-starts, so moving the server does not require editing the fixture.
+address. When the feeder requests its OTA metadata, the server replaces this
+placeholder with the local address reached by that connection. Moving the
+server therefore does not require editing the fixture or selecting an address
+from the computer's other network interfaces.
 
 Stop the inert server from step 2 of the main workflow. Validate the complete
 update configuration without opening a socket:
@@ -90,7 +92,6 @@ python3 serve_petkit_api.py \
   --fixtures devices/esp8266/nonos_v2/fresh-element-mini/fixtures/safe-bootstrap.json \
   --overlay fixtures/local-ota-offer.json \
   --ota-image IMAGE.bin \
-  --ota-url http://YOUR_COMPUTER_IP:8080/ota/image.bin \
   --check
 ```
 

@@ -305,7 +305,7 @@ class ServerTest(unittest.TestCase):
                     "file": {
                         "size": len(self.ota_image),
                         "digest": "00000000",
-                        "url": "http://192.0.2.1/ota/image.bin",
+                        "url": MODULE.OTA_IMAGE_URL_PLACEHOLDER,
                     }
                 }
             ]
@@ -314,7 +314,6 @@ class ServerTest(unittest.TestCase):
             MODULE.validate_ota_offer(
                 offer,
                 self.ota_image,
-                "/ota/image.bin",
                 self.profile,
             )
 
@@ -323,9 +322,68 @@ class ServerTest(unittest.TestCase):
             MODULE.validate_ota_offer(
                 {"details": []},
                 self.ota_image,
-                "/ota/image.bin",
                 self.profile,
             )
+
+    def test_ota_offer_rejects_fixed_download_url(self) -> None:
+        offer = {
+            "details": [
+                {
+                    "file": {
+                        "size": len(self.ota_image),
+                        "digest": MODULE.ota_image_digest(
+                            self.ota_image, self.profile
+                        ),
+                        "url": "http://192.0.2.1/ota/image.bin",
+                    }
+                }
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "must use.*OTA_IMAGE_URL"):
+            MODULE.validate_ota_offer(offer, self.ota_image, self.profile)
+
+    def test_ota_offer_uses_address_reached_by_device(self) -> None:
+        digest = MODULE.ota_image_digest(self.ota_image, self.profile)
+        fixtures = {
+            self.profile["http"]["ota_check_route"]: {
+                "body": {
+                    "result": {
+                        "firmwareId": 7,
+                        "version": "test",
+                        "details": [
+                            {
+                                "module": "userbin",
+                                "version": 8,
+                                "file": {
+                                    "size": len(self.ota_image),
+                                    "digest": digest,
+                                    "url": MODULE.OTA_IMAGE_URL_PLACEHOLDER,
+                                },
+                            }
+                        ],
+                    }
+                }
+            }
+        }
+        server = MODULE.make_server(
+            "127.0.0.1", 0, fixtures, self.profile, self.ota_image
+        )
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            conn = HTTPConnection("127.0.0.1", server.server_port)
+            conn.request("POST", self.profile["http"]["ota_check_route"], "")
+            response = conn.getresponse()
+            body = json.loads(response.read())
+            self.assertEqual(
+                body["result"]["details"][0]["file"]["url"],
+                f"http://127.0.0.1:{server.server_port}/ota/image.bin",
+            )
+            conn.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
 
     def test_fixture_loader_rejects_malformed_response(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
