@@ -1,0 +1,55 @@
+{
+  "name": "petkit-fresh-element-mini",
+  "firmware": {
+    "format": "esp8266-nonos-v2",
+    "flash_size": 2097152,
+    "slots": [
+      {
+        "name": "user1",
+        "offset": 4096,
+        "size": 1048576
+      },
+      {
+        "name": "user2",
+        "offset": 1052672,
+        "size": 1024000
+      }
+    ]
+  },
+  "http": {
+    "ota_check_route": "/6/feedermini/dev_ota_check",
+    "ota_complete_route": "/6/feedermini/dev_ota_complete",
+    "state_report_route": "/6/feedermini/dev_state_report",
+    "safe_form_fields": [
+      "add", "chipid", "errmsg", "firmware", "firmwareDetails", "force",
+      "hardware", "id", "locale", "mac", "otaFirmwareId", "pongokcnt",
+      "smac", "sn", "state", "success", "timezone", "type", "wait"
+    ],
+    "safe_state_fields": ["devLock", "feeding", "ota", "runtime"]
+  },
+  "softap": {
+    "host": "192.168.4.1",
+    "port": 8001,
+    "server_path_suffix": "/6/",
+    "keys": {
+      "hello": 110,
+      "status": 111,
+      "configure": 151,
+      "commit": 153,
+      "heartbeat": 100
+    },
+    "payload_fields": {
+      "ssid": "ssid",
+      "password": "pwd",
+      "hidden": "hide",
+      "server": "server",
+      "timezone": "timezone",
+      "locale": "locale"
+    },
+    "hidden_value": 1,
+    "status_errors": {
+      "1": "Wi-Fi password rejected",
+      "2": "Wi-Fi access point not found"
+    }
+  }
+}

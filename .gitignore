@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+
+# Captures and firmware may contain credentials or proprietary images.
+*.pcap
+*.pcapng
+*.bin
+
+# Device identities, generated offers, and runtime output stay local.
+**/fixtures/local*.json
+**/fixtures/private*.json
+/images/
+/logs/
+/petkit-private-credentials.json
+*.log

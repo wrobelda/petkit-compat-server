@@ -1,0 +1,34 @@
+[
+  {
+    "path": "/6/feedermini/dev_ota_check",
+    "body": "hardware=1&firmware=1.406&firmwareDetails=%5B%7B%22module%22%3A%22userbin%22%2C%22version%22%3A2207006%7D%5D&wait=0&force=0"
+  },
+  {
+    "path": "/6/feedermini/dev_state_report",
+    "body": "state=%7B%22food%22%3A0%2C%22wifi%22%3A%7B%22ssid%22%3A%22SANITIZED_WIFI%22%2C%22bssid%22%3A%22020000000001%22%7D%7D"
+  },
+  {
+    "path": "/6/feedermini/dev_signup",
+    "body": "hardware=1&firmware=1.406&mac=020000000001&timezone=1.0&locale=Europe%2FWarsaw&id=100000001&sn=SANITIZED_SN&smac=020000000002&chipid=10000000"
+  },
+  {
+    "path": "/6/feedermini/dev_iot_device_info",
+    "body": "sn=SANITIZED_SN"
+  },
+  {
+    "path": "/6/feedermini/dev_device_info",
+    "body": "id=100000001"
+  },
+  {
+    "path": "/6/feedermini/dev_serverinfo",
+    "body": ""
+  },
+  {
+    "path": "/6/feedermini/dev_feed_get",
+    "body": "&type=latest"
+  },
+  {
+    "path": "/6/poll/feedermini/heartbeat",
+    "body": "pongokcnt=0"
+  }
+]
