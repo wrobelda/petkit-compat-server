@@ -20,6 +20,7 @@ from petkit_compat.profile import load_profile
 
 LOG = logging.getLogger("petkit.compat")
 DEFAULT_OTA_IMAGE_ROUTE = "/ota/image.bin"
+OTA_IMAGE_URL_PLACEHOLDER = "${OTA_IMAGE_URL}"
 
 
 def load_fixtures(path: Path) -> dict[str, dict[str, Any]]:
@@ -27,6 +28,19 @@ def load_fixtures(path: Path) -> dict[str, dict[str, Any]]:
         fixtures = json.load(handle)
     if not isinstance(fixtures, dict):
         raise ValueError("fixture root must be an object")
+    for route, response in fixtures.items():
+        if (
+            not isinstance(route, str)
+            or not route.startswith("/")
+            or route.startswith("//")
+            or urllib.parse.urlsplit(route).path != route
+        ):
+            raise ValueError("fixture routes must be plain absolute HTTP paths")
+        if not isinstance(response, dict) or "body" not in response:
+            raise ValueError(f"fixture response for {route!r} must contain a body")
+        status = response.get("status", 200)
+        if not isinstance(status, int) or isinstance(status, bool) or not 100 <= status <= 599:
+            raise ValueError(f"fixture status for {route!r} must be an HTTP status")
     return fixtures
 
 
@@ -54,6 +68,59 @@ def profile_routes(profile: dict[str, Any]) -> set[str]:
         for key, value in profile["http"].items()
         if key.endswith("_route")
     }
+
+
+def validate_ota_url(url: str) -> str:
+    parsed = urllib.parse.urlsplit(url)
+    if (
+        parsed.scheme != "http"
+        or not parsed.netloc
+        or not parsed.path.startswith("/")
+        or parsed.path.startswith("//")
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError(
+            "OTA URL must be plain HTTP with a host and an absolute path, "
+            "without a query or fragment"
+        )
+    return url
+
+
+def validate_ota_offer(
+    offer: Any,
+    ota_image: bytes | None,
+    ota_route: str,
+    profile: dict[str, Any],
+) -> dict[str, Any] | None:
+    if offer == {}:
+        return None
+    if not isinstance(offer, dict):
+        raise ValueError("OTA result must be an object")
+    if ota_image is None:
+        raise ValueError("non-empty OTA metadata requires --ota-image")
+    details = offer.get("details")
+    if not isinstance(details, list) or len(details) != 1 or not isinstance(details[0], dict):
+        raise ValueError("OTA metadata must contain exactly one details entry")
+    detail = details[0]
+    file_info = detail.get("file")
+    if not isinstance(file_info, dict):
+        raise ValueError("OTA metadata details must contain file information")
+    size = file_info.get("size")
+    digest = file_info.get("digest")
+    url = file_info.get("url")
+    if not isinstance(size, int) or isinstance(size, bool) or size != len(ota_image):
+        raise ValueError("OTA metadata size does not match --ota-image")
+    if digest != ota_image_digest(ota_image, profile):
+        raise ValueError("OTA metadata digest does not match --ota-image")
+    if not isinstance(url, str):
+        raise ValueError("OTA metadata file URL must be a string")
+    parsed_url = urllib.parse.urlsplit(url)
+    if parsed_url.scheme != "http" or not parsed_url.netloc or parsed_url.query or parsed_url.fragment:
+        raise ValueError("OTA metadata file URL must be plain HTTP without query or fragment")
+    if parsed_url.path != ota_route:
+        raise ValueError("OTA metadata URL path does not match --ota-url")
+    return detail
 
 
 def render(value: Any) -> Any:
@@ -299,9 +366,8 @@ def main() -> None:
         help="serve an OTA image validated for the selected device profile",
     )
     parser.add_argument(
-        "--ota-route",
-        default=DEFAULT_OTA_IMAGE_ROUTE,
-        help=f"HTTP path used for --ota-image (default: {DEFAULT_OTA_IMAGE_ROUTE})",
+        "--ota-url",
+        help="client-visible HTTP URL used to download --ota-image",
     )
     parser.add_argument(
         "--check",
@@ -317,32 +383,40 @@ def main() -> None:
         parser.error(str(error))
     if args.overlay:
         fixtures.update(load_fixtures(args.overlay))
-    try:
-        ota_route = validate_ota_route(
-            args.ota_route, set(fixtures) | profile_routes(profile)
-        )
-        ota_image = load_ota_image(args.ota_image, profile) if args.ota_image else None
-    except ValueError as error:
-        parser.error(str(error))
     ota_check_route = profile["http"]["ota_check_route"]
     ota_body = fixtures.get(ota_check_route, {}).get("body", {})
     payload_offer = ota_body.get("payload", {})
     if payload_offer:
         parser.error("non-empty OTA metadata must use the result wrapper")
     ota_offer = ota_body.get("result", {})
-    if ota_offer and ota_image is None:
-        parser.error("non-empty OTA metadata requires --ota-image")
-    if ota_offer and int(ota_offer["details"][0]["file"]["size"]) != len(ota_image or b""):
-        parser.error("OTA metadata size does not match --ota-image")
     if ota_offer:
-        from urllib.parse import urlsplit
-
-        offer_path = urlsplit(ota_offer["details"][0]["file"]["url"]).path
-        if offer_path != ota_route:
-            parser.error("OTA metadata URL path does not match --ota-route")
-        detail = ota_offer["details"][0]
-        if detail["file"].get("digest") != ota_image_digest(ota_image or b"", profile):
-            parser.error("OTA metadata digest does not match --ota-image")
+        try:
+            offered_url = ota_offer["details"][0]["file"]["url"]
+        except (KeyError, IndexError, TypeError):
+            offered_url = None
+        if offered_url != OTA_IMAGE_URL_PLACEHOLDER:
+            parser.error("OTA metadata file URL must use ${OTA_IMAGE_URL}")
+        if args.ota_url is None:
+            parser.error("non-empty OTA metadata requires --ota-url")
+        ota_offer["details"][0]["file"]["url"] = args.ota_url
+    try:
+        if args.ota_url is not None:
+            validate_ota_url(args.ota_url)
+            ota_route = urllib.parse.urlsplit(args.ota_url).path
+        else:
+            ota_route = DEFAULT_OTA_IMAGE_ROUTE
+        ota_route = validate_ota_route(
+            ota_route, set(fixtures) | profile_routes(profile)
+        )
+        ota_image = load_ota_image(args.ota_image, profile) if args.ota_image else None
+    except ValueError as error:
+        parser.error(str(error))
+    try:
+        detail = validate_ota_offer(ota_offer, ota_image, ota_route, profile)
+    except ValueError as error:
+        parser.error(str(error))
+    if detail is not None:
+        offer_path = urllib.parse.urlsplit(detail["file"]["url"]).path
         LOG.info(
             json.dumps(
                 {

@@ -298,6 +298,42 @@ class ServerTest(unittest.TestCase):
                 {"/6/feedermini/dev_ota_check"},
             )
 
+    def test_ota_offer_rejects_digest_mismatch(self) -> None:
+        offer = {
+            "details": [
+                {
+                    "file": {
+                        "size": len(self.ota_image),
+                        "digest": "00000000",
+                        "url": "http://192.0.2.1/ota/image.bin",
+                    }
+                }
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "digest"):
+            MODULE.validate_ota_offer(
+                offer,
+                self.ota_image,
+                "/ota/image.bin",
+                self.profile,
+            )
+
+    def test_ota_offer_rejects_malformed_details(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            MODULE.validate_ota_offer(
+                {"details": []},
+                self.ota_image,
+                "/ota/image.bin",
+                self.profile,
+            )
+
+    def test_fixture_loader_rejects_malformed_response(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fixtures.json"
+            path.write_text('{"relative": {"status": 999}}', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "absolute HTTP paths"):
+                MODULE.load_fixtures(path)
+
 
 if __name__ == "__main__":
     unittest.main()

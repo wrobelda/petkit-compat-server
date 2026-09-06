@@ -34,7 +34,6 @@ class PetkitOtaOfferTest(unittest.TestCase):
             firmware_id=7,
             version="local-transition",
             module_version=8,
-            url="http://192.0.2.1/ota/transition.bin",
         )
         result = fixture["/6/feedermini/dev_ota_check"]["body"]["result"]
         file_info = result["details"][0]["file"]
@@ -42,6 +41,7 @@ class PetkitOtaOfferTest(unittest.TestCase):
         self.assertEqual(
             file_info["digest"], f"{struct.unpack_from('<I', image, len(image) - 4)[0]:08x}"
         )
+        self.assertEqual(file_info["url"], "${OTA_IMAGE_URL}")
 
 
 if __name__ == "__main__":

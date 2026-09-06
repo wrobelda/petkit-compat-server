@@ -12,7 +12,7 @@
             "file": {
               "size": 661460,
               "digest": "03dc5920",
-              "url": "http://api.eu-pet.com/stock/user2.bin"
+              "url": "${OTA_IMAGE_URL}"
             }
           }
         ]
