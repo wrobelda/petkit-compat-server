@@ -42,18 +42,20 @@ An accepted offer has this shape:
 }
 ```
 
-The HTTP callback selects `result`, not the alternative `payload` wrapper. It
-requires a details array and usable URL. `firmwareId`, the top-level version,
-and the module version are distinct fields; the user1 HTTP handler does not
-compare them before accepting an otherwise eligible offer.
+The older Fresh Element Mini stock firmware's OTA-check callback selects
+`result`, not the alternative `payload` wrapper. The callback requires a
+details array and usable URL. `firmwareId`, the top-level version, and the
+module version are distinct fields; the user1 callback does not compare them
+before accepting an otherwise eligible offer.
 
-The downloader parses `Content-Length` and `Content-Range`, requests bounded
-byte ranges, writes the inactive physical slot, compares an image CRC with a
-CRC read back from flash, reports completion, changes the selected slot, and
-reboots. A controlled stock user2-to-user1 downgrade and user1-to-user2 upgrade
-both completed. The booted firmware then reported the version stored in the
-newly selected slot. The same path subsequently installed the Kickstart V2
-bridge and completed the full migration to ESPHome.
+The Fresh Element Mini stock firmware's OTA client parses `Content-Length` and
+`Content-Range`, requests bounded byte ranges, writes the inactive physical
+slot, compares an image CRC with a CRC read back from flash, reports
+completion, changes the selected slot, and reboots. A controlled stock
+user2-to-user1 downgrade and user1-to-user2 upgrade both completed. After each
+reboot, the stock firmware reported the version stored in the newly selected
+slot. The same OTA client subsequently installed the Kickstart V2 bridge and
+completed the full migration to ESPHome.
 
 ## HTTP response compatibility
 

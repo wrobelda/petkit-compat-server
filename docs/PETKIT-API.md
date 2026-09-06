@@ -153,7 +153,8 @@ the cloud command path to clear the Fresh Element Mini firmware's persistent
 OTA failure counter. It did not reboot the device. Other device-family routes must be
 confirmed before this helper is generalized beyond `feedermini`.
 
-`petkit_app_ota_reset.py` implements this request. It is a dry run unless
+[`tools/petkit_app_ota_reset.py`](../tools/petkit_app_ota_reset.py) implements
+this request. It is a dry run unless
 `--send` is supplied. It accepts an existing `PETKIT_SESSION` or logs in using
 `PETKIT_USERNAME` and `PETKIT_PASSWORD`; credentials and the temporary session
 remain in memory and are not printed.

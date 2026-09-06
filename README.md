@@ -72,11 +72,27 @@ putting the password itself in shell history.
 
 On Linux with NetworkManager:
 
-```sh
+```bash
 export PETKIT_WIFI_SSID='<target Wi-Fi name>'
+PETKIT_WIFI_CONNECTION="$(
+  while IFS= read -r uuid; do
+    if [ "$(nmcli --get-values 802-11-wireless.ssid connection show uuid "$uuid" 2>/dev/null)" = "$PETKIT_WIFI_SSID" ]; then
+      printf '%s\n' "$uuid"
+      break
+    fi
+  done < <(nmcli --get-values UUID connection show)
+)"
+test -n "$PETKIT_WIFI_CONNECTION" || {
+  echo "No saved NetworkManager connection found for $PETKIT_WIFI_SSID" >&2
+  false
+}
 export PETKIT_WIFI_PASSWORD="$(nmcli --show-secrets \
   --get-values 802-11-wireless-security.psk \
-  connection show "$PETKIT_WIFI_SSID")"
+  connection show uuid "$PETKIT_WIFI_CONNECTION")"
+test -n "$PETKIT_WIFI_PASSWORD" || {
+  echo "The saved NetworkManager connection has no Wi-Fi password" >&2
+  false
+}
 ```
 
 On macOS:
@@ -125,17 +141,7 @@ TCP port 8080 before changing any firmware.
 
 Return to the selected device page and follow its firmware instructions.
 
-## Developer documentation
+## Add support for another device
 
-Normal installation ends above. Developers adding a device should read the
-[contributor guide](docs/CONTRIBUTING.md), [Petkit protocol
-reference](docs/PETKIT-API.md), and [firmware-analysis
-guide](docs/DISASSEMBLY.md).
-
-Run the test suite with:
-
-```sh
-python3 -m unittest discover -s tests -v
-```
-
-Tests that require a private stock flash image skip when that image is absent.
+The installation instructions end above. Development instructions and protocol
+references are in the [contributor guide](docs/CONTRIBUTING.md).

@@ -21,6 +21,9 @@ cmp stock-a.bin stock-b.bin
 sha256sum stock-a.bin stock-b.bin
 ```
 
+On macOS, use `shasum -a 256 stock-a.bin stock-b.bin` instead of
+`sha256sum`.
+
 The files must match the profile's `firmware.flash_size`, `cmp` must produce no
 output, and both hashes must match. Store one copy away from the development
 machine. A stock dump can contain network, device, and account credentials, so
@@ -31,10 +34,10 @@ profile:
 
 ```sh
 python3 devices/esp8266/nonos_v2/tools/analyze_stock_ota.py stock-a.bin \
-  --profile devices/esp8266/DEVICE/profile.json
+  --profile devices/esp8266/nonos_v2/DEVICE/profile.json
 
 python3 devices/esp8266/nonos_v2/tools/analyze_stock_ota.py stock-a.bin \
-  --profile devices/esp8266/DEVICE/profile.json \
+  --profile devices/esp8266/nonos_v2/DEVICE/profile.json \
   --extract-dir stock-slots
 ```
 
