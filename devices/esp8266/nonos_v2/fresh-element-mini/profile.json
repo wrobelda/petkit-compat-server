@@ -1,5 +1,8 @@
 {
   "name": "petkit-fresh-element-mini",
+  "fixtures": {
+    "base": "fixtures/safe-bootstrap.json"
+  },
   "firmware": {
     "format": "esp8266-nonos-v2",
     "flash_size": 2097152,
@@ -20,6 +23,12 @@
     "ota_check_route": "/6/feedermini/dev_ota_check",
     "ota_complete_route": "/6/feedermini/dev_ota_complete",
     "state_report_route": "/6/feedermini/dev_state_report",
+    "ota_offer": {
+      "firmware_id": 2207008,
+      "version": "1.406",
+      "module": "userbin",
+      "module_version": 2207006
+    },
     "safe_form_fields": [
       "add", "chipid", "errmsg", "firmware", "firmwareDetails", "force",
       "hardware", "id", "locale", "mac", "otaFirmwareId", "pongokcnt",

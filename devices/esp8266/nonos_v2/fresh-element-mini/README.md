@@ -39,14 +39,13 @@ Use the numbered workflow in the [main README](../../../../README.md) with:
 | Placeholder | Value |
 |---|---|
 | `PROFILE_PATH` | `devices/esp8266/nonos_v2/fresh-element-mini/profile.json` |
-| `FIXTURE_PATH` | `devices/esp8266/nonos_v2/fresh-element-mini/fixtures/safe-bootstrap.json` |
 | `YOUR_COMPUTER_API_URL` | `http://YOUR_COMPUTER_IP:8080/6/` |
 
 The committed fixture lets the stock firmware start and contact the local
 compatibility server, but it does not offer an update. Installing replacement
-firmware also requires the image and private OTA metadata fixture described
-under [Offer an OTA image](#offer-an-ota-image). Its placeholder device and
-Aliyun values are not usable for continued stock cloud operation.
+firmware also requires the image described under [Offer an OTA
+image](#offer-an-ota-image). Its placeholder device and Aliyun values are not
+usable for continued stock cloud operation.
 
 To enter setup mode, hold the feeder's Wi-Fi/reset button for about five
 seconds until it gives the long confirmation beep. Connect the computer to the
@@ -65,32 +64,17 @@ Read [HARDWARE.md](HARDWARE.md) before changing firmware. The
 server accepts only complete ESP8266 V2 user-bin images with a valid segment
 checksum, appended SDK CRC32, and no trailing data.
 
-Generate a private metadata fixture from the exact image to be served:
-
-```sh
-python3 devices/esp8266/nonos_v2/fresh-element-mini/tools/make_ota_offer.py \
-  IMAGE.bin fixtures/local-ota-offer.json \
-  --firmware-id ID \
-  --version VERSION \
-  --module-version MODULE_VERSION
-```
-
-The generated fixture contains `${OTA_IMAGE_URL}` instead of a computer
-address. When the feeder requests its OTA metadata, the server replaces this
-placeholder with the local address reached by that connection. Moving the
-server therefore does not require editing the fixture or selecting an address
-from the computer's other network interfaces.
-
-Stop the inert server from step 2 of the main workflow. Validate the complete
-update configuration without opening a socket:
+The profile selects its synthetic base fixture and the stable metadata fields
+expected by this stock firmware. When `--ota-image` is present, the server
+validates the image and calculates its size, digest, and reachable download URL
+at startup. Validate the complete update configuration without opening a
+socket:
 
 ```sh
 python3 serve_petkit_api.py \
   --host 0.0.0.0 \
   --port 8080 \
   --profile devices/esp8266/nonos_v2/fresh-element-mini/profile.json \
-  --fixtures devices/esp8266/nonos_v2/fresh-element-mini/fixtures/safe-bootstrap.json \
-  --overlay fixtures/local-ota-offer.json \
   --ota-image IMAGE.bin \
   --check
 ```

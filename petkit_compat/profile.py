@@ -17,6 +17,8 @@ def load_profile(path: Path) -> dict[str, Any]:
         http["state_report_route"]
         safe_fields = http["safe_form_fields"]
         safe_state_fields = http["safe_state_fields"]
+        ota_offer = http["ota_offer"]
+        base_fixture = profile["fixtures"]["base"]
         softap = profile["softap"]
         keys = softap["keys"]
         payload_fields = softap["payload_fields"]
@@ -43,6 +45,20 @@ def load_profile(path: Path) -> dict[str, Any]:
         isinstance(item, str) for item in safe_state_fields
     ):
         raise ValueError("safe_state_fields must be a list of strings")
+    if not isinstance(base_fixture, str) or not base_fixture:
+        raise ValueError("fixtures.base must be a non-empty relative path")
+    if Path(base_fixture).is_absolute() or ".." in Path(base_fixture).parts:
+        raise ValueError("fixtures.base must stay inside the device directory")
+    if not isinstance(ota_offer, dict):
+        raise ValueError("http.ota_offer must be an object")
+    for key in ("firmware_id", "module_version"):
+        value = ota_offer.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise ValueError(f"http.ota_offer.{key} must be a positive integer")
+    for key in ("version", "module"):
+        value = ota_offer.get(key)
+        if not isinstance(value, str) or not value:
+            raise ValueError(f"http.ota_offer.{key} must be a non-empty string")
     if not isinstance(firmware_format, str) or not firmware_format:
         raise ValueError("firmware format must be a non-empty string")
     if not isinstance(flash_size, int) or isinstance(flash_size, bool) or flash_size <= 0:

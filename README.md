@@ -31,10 +31,9 @@ computer:
 ### 1. Select the exact device
 
 Open the [supported-device list](devices/README.md), select the exact model,
-and read its page. Copy these three values from that page:
+and read its page. Copy these two values from that page:
 
 - `PROFILE_PATH`;
-- `FIXTURE_PATH`;
 - `YOUR_COMPUTER_API_URL`.
 
 Do not select a device only because its name or enclosure looks similar.
@@ -46,8 +45,7 @@ that the Petkit device will use:
 
 ```sh
 python3 serve_petkit_api.py --host 0.0.0.0 --port 8080 \
-  --profile PROFILE_PATH \
-  --fixtures FIXTURE_PATH
+  --profile PROFILE_PATH
 ```
 
 Leave this terminal running. Make sure TCP port 8080 is allowed through the

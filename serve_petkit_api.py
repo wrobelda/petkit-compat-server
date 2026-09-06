@@ -100,6 +100,26 @@ def validate_ota_offer(
     return detail
 
 
+def make_ota_offer(ota_image: bytes, profile: dict[str, Any]) -> dict[str, Any]:
+    """Build the selected profile's OTA response from the validated image."""
+    metadata = profile["http"]["ota_offer"]
+    return {
+        "firmwareId": metadata["firmware_id"],
+        "version": metadata["version"],
+        "details": [
+            {
+                "module": metadata["module"],
+                "version": metadata["module_version"],
+                "file": {
+                    "size": len(ota_image),
+                    "digest": ota_image_digest(ota_image, profile),
+                    "url": OTA_IMAGE_URL_PLACEHOLDER,
+                },
+            }
+        ],
+    }
+
+
 def render(value: Any, replacements: dict[str, str] | None = None) -> Any:
     """Expand the small set of safe dynamic values supported by fixtures."""
     replacements = replacements or {}
@@ -345,12 +365,7 @@ def main() -> None:
     parser.add_argument(
         "--fixtures",
         type=Path,
-        required=True,
-    )
-    parser.add_argument(
-        "--overlay",
-        type=Path,
-        help="optional fixture file whose routes override the base fixtures",
+        help="override the base fixture selected by the device profile",
     )
     parser.add_argument(
         "--ota-image",
@@ -366,17 +381,11 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
         profile = load_profile(args.profile)
-        fixtures = load_fixtures(args.fixtures)
+        fixture_path = args.fixtures or args.profile.parent / profile["fixtures"]["base"]
+        fixtures = load_fixtures(fixture_path)
     except ValueError as error:
         parser.error(str(error))
-    if args.overlay:
-        fixtures.update(load_fixtures(args.overlay))
     ota_check_route = profile["http"]["ota_check_route"]
-    ota_body = fixtures.get(ota_check_route, {}).get("body", {})
-    payload_offer = ota_body.get("payload", {})
-    if payload_offer:
-        parser.error("non-empty OTA metadata must use the result wrapper")
-    ota_offer = ota_body.get("result", {})
     try:
         ota_route = DEFAULT_OTA_IMAGE_ROUTE
         ota_route = validate_ota_route(
@@ -385,6 +394,15 @@ def main() -> None:
         ota_image = load_ota_image(args.ota_image, profile) if args.ota_image else None
     except ValueError as error:
         parser.error(str(error))
+    if ota_image is not None:
+        ota_offer = make_ota_offer(ota_image, profile)
+        fixtures[ota_check_route] = {"status": 200, "body": {"result": ota_offer}}
+    else:
+        ota_body = fixtures.get(ota_check_route, {}).get("body", {})
+        payload_offer = ota_body.get("payload", {})
+        if payload_offer:
+            parser.error("non-empty OTA metadata must use the result wrapper")
+        ota_offer = ota_body.get("result", {})
     try:
         detail = validate_ota_offer(ota_offer, ota_image, profile)
     except ValueError as error:
@@ -415,12 +433,11 @@ def main() -> None:
         ota_route,
     )
     LOG.info(
-        "listening on %s:%d with profile %s and fixtures %s%s",
+        "listening on %s:%d with profile %s and fixtures %s",
         args.host,
         args.port,
         profile["name"],
-        args.fixtures,
-        f" plus {args.overlay}" if args.overlay else "",
+        fixture_path,
     )
     try:
         server.serve_forever()
