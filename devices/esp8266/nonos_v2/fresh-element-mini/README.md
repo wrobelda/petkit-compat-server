@@ -53,7 +53,7 @@ seconds until it gives the long confirmation beep. Connect the computer to the
 target network must use 2.4 GHz Wi-Fi.
 
 If the goal is to keep the stock firmware operating against the local server,
-copy the synthetic fixture to the ignored `fixtures/local-device.json`, set
+copy the synthetic fixture to the ignored `local/fixtures/device.json`, set
 permissions to `0600`, and replace its placeholder signup and Aliyun fields
 with values from the owner's private capture. This is not required for the
 ESPHome migration.

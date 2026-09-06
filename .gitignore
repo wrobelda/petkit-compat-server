@@ -10,7 +10,6 @@ __pycache__/
 # Device identities, generated offers, and runtime output stay local.
 **/fixtures/local*.json
 **/fixtures/private*.json
-/images/
-/logs/
+/local/
 /petkit-private-credentials.json
 *.log
