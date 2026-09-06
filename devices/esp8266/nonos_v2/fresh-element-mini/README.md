@@ -86,7 +86,7 @@ the image and returns an empty OTA result on later checks.
 The stock firmware downloads an OTA into its inactive user-bin slot and changes
 the selected slot only after validation. The complete transition from Petkit's
 paired non-OS slots to a normal ESPHome eboot layout is documented by
-[`wrobelda/petkit-esphome`](https://github.com/wrobelda/petkit-esphome) and
+[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome) and
 [ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart); it is
 not encoded in this device profile.
 

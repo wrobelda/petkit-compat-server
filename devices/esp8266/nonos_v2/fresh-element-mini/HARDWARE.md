@@ -22,7 +22,7 @@ the M0 over UART0.
 
 The M0 firmware remains installed independently of either ESP8266 user-bin
 slot. The M0 serial protocol and firmware analysis belong to
-[`wrobelda/petkit-esphome`](https://github.com/wrobelda/petkit-esphome), because
+[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome), because
 the compatibility server only reproduces the stock network and update services.
 
 ## ESP8266 flash layout
