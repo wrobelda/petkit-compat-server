@@ -159,10 +159,14 @@ this request. It is a dry run unless
 `PETKIT_USERNAME` and `PETKIT_PASSWORD`; credentials and the temporary session
 remain in memory and are not printed.
 
-```sh
-PETKIT_REGION='<account region>' PETKIT_USERNAME='<account email>' \
-  PETKIT_PASSWORD='<account password>' \
-  python3 tools/petkit_app_ota_reset.py --device-id DEVICE_ID --send
+```bash
+export PETKIT_REGION='<account region>'
+read -r -p 'Petkit account: ' PETKIT_USERNAME
+read -r -s -p 'Petkit password: ' PETKIT_PASSWORD
+printf '\n'
+export PETKIT_USERNAME PETKIT_PASSWORD
+python3 tools/petkit_app_ota_reset.py --device-id DEVICE_ID --send
+unset PETKIT_USERNAME PETKIT_PASSWORD
 ```
 
 This helper contacts Petkit's live service. It is separate from the local
