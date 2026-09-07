@@ -103,7 +103,7 @@ processors have their own executable formats, boot metadata, and update rules.
 Determine both the source and destination layouts before offering an update.
 An ordinary replacement image may not be valid for the source firmware's OTA
 client, even when both images run on the same chip. As one concrete example,
-[`wrobelda/petkit-esphome`](https://github.com/wrobelda/petkit-esphome) uses a
+[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome) uses a
 stock-compatible non-OS V2 transition image from [ESPHome
 Kickstart](https://github.com/libretiny-eu/esphome-kickstart) to install ESPHome
 on the [Fresh Element Mini](../devices/esp8266/nonos_v2/fresh-element-mini/).
