@@ -24,6 +24,7 @@ DEFAULT_OTA_IMAGE_ROUTE = "/ota/image.bin"
 OTA_IMAGE_URL_PLACEHOLDER = "${OTA_IMAGE_URL}"
 MAX_REQUEST_BODY_BYTES = 1024 * 1024
 MAX_CONCURRENT_REQUESTS = 16
+REQUEST_READ_TIMEOUT_SECONDS = 10.0
 
 
 class BoundedThreadingHTTPServer(ThreadingHTTPServer):
@@ -258,6 +259,10 @@ class PetkitHandler(BaseHTTPRequestHandler):
     # the captured Petkit frontend status line and headers instead.
     protocol_version = "HTTP/1.1"
 
+    def setup(self) -> None:
+        super().setup()
+        self.connection.settimeout(self.server.request_read_timeout)  # type: ignore[attr-defined]
+
     def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -270,7 +275,14 @@ class PetkitHandler(BaseHTTPRequestHandler):
         if length > MAX_REQUEST_BODY_BYTES:
             self._send_json(413, {"error": "request body too large"})
             return
-        body = self.rfile.read(length)
+        try:
+            body = self.rfile.read(length)
+        except TimeoutError:
+            self._send_json(408, {"error": "request body timed out"})
+            return
+        if len(body) != length:
+            self._send_json(400, {"error": "incomplete request body"})
+            return
         LOG.info(json.dumps(request_summary(self, body), separators=(",", ":")))
 
         route = self.path.split("?", 1)[0]
@@ -386,6 +398,7 @@ def make_server(
     profile: dict[str, Any],
     ota_image: bytes | None = None,
     ota_image_route: str = DEFAULT_OTA_IMAGE_ROUTE,
+    request_read_timeout: float = REQUEST_READ_TIMEOUT_SECONDS,
 ) -> BoundedThreadingHTTPServer:
     server = BoundedThreadingHTTPServer((host, port), PetkitHandler)
     server.fixtures = fixtures  # type: ignore[attr-defined]
@@ -395,6 +408,7 @@ def make_server(
         ota_image_route, set(fixtures) | profile_routes(profile)
     )
     server.ota_offer_completed = False  # type: ignore[attr-defined]
+    server.request_read_timeout = request_read_timeout  # type: ignore[attr-defined]
     return server
 
 

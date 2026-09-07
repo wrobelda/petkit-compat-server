@@ -129,6 +129,39 @@ class ServerTest(unittest.TestCase):
         self.assertIn(b"HTTP/1.1 413 ", response)
         self.assertIn(b"request body too large", response)
 
+    def test_times_out_incomplete_request_body(self) -> None:
+        server = MODULE.make_server(
+            "127.0.0.1",
+            0,
+            self.server.fixtures,
+            self.profile,
+            request_read_timeout=0.1,
+        )
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with socket.create_connection(("127.0.0.1", server.server_port)) as conn:
+                conn.settimeout(1)
+                conn.sendall(
+                    b"POST /6/feedermini/dev_ota_check HTTP/1.1\r\n"
+                    b"Host: localhost\r\nContent-Length: 10\r\n"
+                    b"Connection: close\r\n\r\n"
+                )
+                response = conn.recv(1460)
+            self.assertIn(b"HTTP/1.1 408 ", response)
+            self.assertIn(b"request body timed out", response)
+
+            conn = HTTPConnection("127.0.0.1", server.server_port, timeout=1)
+            conn.request("POST", "/6/feedermini/dev_ota_check", "")
+            normal_response = conn.getresponse()
+            self.assertEqual(normal_response.status, 200)
+            normal_response.read()
+            conn.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
     def test_ota_check_logs_only_sanitized_versions(self) -> None:
         stream = io.StringIO()
         handler = logging.StreamHandler(stream)
