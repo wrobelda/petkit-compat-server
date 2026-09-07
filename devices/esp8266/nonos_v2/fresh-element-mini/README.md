@@ -90,10 +90,12 @@ directly: the stock bootloader expects a V2 user-bin and cannot boot ESPHome's
 eboot V1 layout. Install the device-specific ESPHome Kickstart transition image
 first; that image allows the final ESPHome factory image to be installed with
 a safe layout migration. Follow the complete procedure in
-[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome).
-The generic migration implementation is documented by
-[ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart); it is
-not encoded in this device profile.
+[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome#installation).
+The tested generic migration implementation currently lives in the
+[`wrobelda/esphome-kickstart`](https://github.com/wrobelda/esphome-kickstart)
+fork and is intended for the canonical
+[ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart) project;
+it is not encoded in this device profile.
 
 ## Logging and failure behavior
 

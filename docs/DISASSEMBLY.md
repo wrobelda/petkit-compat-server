@@ -103,10 +103,13 @@ processors have their own executable formats, boot metadata, and update rules.
 Determine both the source and destination layouts before offering an update.
 An ordinary replacement image may not be valid for the source firmware's OTA
 client, even when both images run on the same chip. As one concrete example,
-[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome) uses a
-stock-compatible non-OS V2 transition image from [ESPHome
-Kickstart](https://github.com/libretiny-eu/esphome-kickstart) to install ESPHome
-on the [Fresh Element Mini](../devices/esp8266/nonos_v2/fresh-element-mini/).
+[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome#installation)
+uses a stock-compatible non-OS V2 transition image from a tested
+[ESPHome Kickstart fork](https://github.com/wrobelda/esphome-kickstart) to
+install ESPHome on the [Fresh Element
+Mini](../devices/esp8266/nonos_v2/fresh-element-mini/). The generic transition
+changes are intended for the canonical
+[ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart) project.
 The transition image then replaces the Petkit bootloader with ESPHome's eboot
 V1 layout. Separate staged-migration precedents include
 [Tuya-Convert](https://github.com/ct-Open-Source/tuya-convert) and
