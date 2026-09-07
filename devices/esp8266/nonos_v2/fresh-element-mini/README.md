@@ -85,9 +85,13 @@ feeder reports a successful OTA completion, that server process stops offering
 the image and returns an empty OTA result on later checks.
 
 The stock firmware downloads an OTA into its inactive user-bin slot and changes
-the selected slot only after validation. The complete transition from Petkit's
-paired non-OS slots to a normal ESPHome eboot layout is documented by
-[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome) and
+the selected slot only after validation. Do not offer a normal ESPHome image
+directly: the stock bootloader expects a V2 user-bin and cannot boot ESPHome's
+eboot V1 layout. Install the device-specific ESPHome Kickstart transition image
+first; that image allows the final ESPHome factory image to be installed with
+a safe layout migration. Follow the complete procedure in
+[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome).
+The generic migration implementation is documented by
 [ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart); it is
 not encoded in this device profile.
 
