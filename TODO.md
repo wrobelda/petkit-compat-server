@@ -1,6 +1,5 @@
 # Remaining work
 
-- Choose and add a repository license before publication.
 - Add a device profile only after its request schema, SoftAP behavior, OTA
   format, flash layout, and protected regions have been independently verified.
 - Review unsupported Fresh Element Mini endpoints and add fixtures only when a
