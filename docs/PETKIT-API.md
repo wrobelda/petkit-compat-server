@@ -148,7 +148,7 @@ local MQTT replacement.
 ## Petkit mobile-app API: reset OTA failures
 
 The observed Petkit mobile-app route `POST /6/feedermini/ota_reset` accepts the
-numeric Petkit device ID in the `id` form field. A successful request caused
+numeric Petkit device ID in the `deviceId` form field. A successful request caused
 the cloud command path to clear the Fresh Element Mini firmware's persistent
 OTA failure counter. It did not reboot the device. Other device-family routes must be
 confirmed before this helper is generalized beyond `feedermini`.
