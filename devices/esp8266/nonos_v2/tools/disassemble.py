@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Disassemble an ESP8266 non-OS V2 user-bin slice and annotate literals."""
 
+import argparse
 from pathlib import Path
 import re
+import shutil
 import struct
 import subprocess
-import sys
+import tempfile
 
 
-OBJDUMP = "/usr/bin/xtensa-linux-gnu-objdump"
-OBJCOPY = "/usr/bin/xtensa-linux-gnu-objcopy"
 IROM_BASE = 0x40200000
 IROM_FILE_OFFSET = 0x10
 
@@ -48,31 +48,58 @@ def cstring(data: bytes, offset: int, limit: int = 120) -> str | None:
     return None
 
 
+def find_tool(explicit: str | None, names: tuple[str, ...]) -> str:
+    if explicit is not None:
+        return explicit
+    for name in names:
+        if path := shutil.which(name):
+            return path
+    raise SystemExit(f"required tool not found: {' or '.join(names)}")
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("image", type=Path)
+    result.add_argument("file_offset", type=lambda value: int(value, 0))
+    result.add_argument("length", type=lambda value: int(value, 0))
+    result.add_argument("--objdump", help="Xtensa objdump executable")
+    result.add_argument("--objcopy", help="Xtensa objcopy executable")
+    return result
+
+
 def main() -> None:
-    if len(sys.argv) != 4:
-        raise SystemExit(f"usage: {sys.argv[0]} IMAGE FILE_OFFSET LENGTH")
-    image = Path(sys.argv[1])
-    start = int(sys.argv[2], 0)
-    length = int(sys.argv[3], 0)
+    args = parser().parse_args()
+    image = args.image
+    start = args.file_offset
+    length = args.length
     data = image.read_bytes()
     chunk = data[start : start + length]
-    raw = Path("/tmp/petkit-disasm.bin")
-    elf = Path("/tmp/petkit-disasm.elf")
-    raw.write_bytes(chunk)
     base = file_to_vma(start)
-    subprocess.run(
-        [
-            OBJCOPY,
-            "-I", "binary",
-            "-O", "elf32-xtensa-le",
-            "-B", "xtensa",
-            "--set-section-flags", ".data=alloc,load,code,contents",
-            "--change-section-address", f".data={base:#x}",
-            str(raw), str(elf),
-        ],
-        check=True,
+    objcopy = find_tool(
+        args.objcopy,
+        ("xtensa-linux-gnu-objcopy", "xtensa-lx106-elf-objcopy"),
     )
-    output = subprocess.check_output([OBJDUMP, "-d", str(elf)], text=True)
+    objdump = find_tool(
+        args.objdump,
+        ("xtensa-linux-gnu-objdump", "xtensa-lx106-elf-objdump"),
+    )
+    with tempfile.TemporaryDirectory(prefix="petkit-disasm-") as directory:
+        raw = Path(directory) / "slice.bin"
+        elf = Path(directory) / "slice.elf"
+        raw.write_bytes(chunk)
+        subprocess.run(
+            [
+                objcopy,
+                "-I", "binary",
+                "-O", "elf32-xtensa-le",
+                "-B", "xtensa",
+                "--set-section-flags", ".data=alloc,load,code,contents",
+                "--change-section-address", f".data={base:#x}",
+                str(raw), str(elf),
+            ],
+            check=True,
+        )
+        output = subprocess.check_output([objdump, "-d", str(elf)], text=True)
     for line in output.splitlines():
         match = re.search(r"l32r\s+\w+,\s+([0-9a-f]+)", line)
         annotation = ""
