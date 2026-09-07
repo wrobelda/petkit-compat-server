@@ -28,7 +28,7 @@ the compatibility server only reproduces the stock network and update services.
 ## ESP8266 flash layout
 
 The ESP8266 has 2 MiB of flash and uses Espressif's paired non-OS SDK V2 OTA
-layout:
+layout. These boundaries are also encoded in [`profile.json`](profile.json):
 
 | Region | Start | Safe extent |
 |---|---:|---:|
@@ -91,8 +91,7 @@ all verified reads and writes.
 
 ## Backup and recovery
 
-Follow the shared [ESP8266 non-OS V2 backup and recovery
-procedure](../RECOVERY.md). Use this device's `profile.json` for its
-2 MiB
-flash size and slot boundaries. The complete procedure, a user1 slot restore,
-and flash verification were exercised on the feeder.
+Follow the shared [ESP8266 non-OS V2 hardware, backup, and recovery
+guide](../HARDWARE.md). Use this device's `profile.json` for its 2 MiB flash
+size and slot boundaries. The complete procedure, a user1 slot restore, and
+flash verification were exercised on the feeder.

@@ -25,8 +25,9 @@ verification.
   device profile when no OTA image is supplied.
 - [Stock OTA research](OTA-RESEARCH.md) documents the update protocol and image
   format.
-- [Hardware](HARDWARE.md) documents the board, flash layout, and serial pads;
-  the shared [V2 recovery guide](../RECOVERY.md) covers backup and restore.
+- [Hardware](HARDWARE.md) documents the board and serial pads; the shared
+  [V2 hardware and recovery guide](../HARDWARE.md) covers the flash layout,
+  backup, and restore.
 
 Private fixtures, firmware images, packet captures, and logs belong in ignored
 paths. Never replace the synthetic fixture values with live credentials in a

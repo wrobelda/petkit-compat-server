@@ -42,7 +42,7 @@ can establish:
 - whether an extracted update matches the bytes installed in flash.
 
 For an ESP8266 non-OS V2 device, follow the [backup and recovery
-guide](../devices/esp8266/nonos_v2/RECOVERY.md). Read the flash twice and compare
+guide](../devices/esp8266/nonos_v2/HARDWARE.md). Read the flash twice and compare
 the files before using either copy as evidence.
 
 ## Useful tools

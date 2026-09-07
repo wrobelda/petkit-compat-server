@@ -15,7 +15,7 @@ Read these documents before collecting new data or writing a new helper:
 - the nearest platform and layout implementation, such as the [ESP8266 non-OS
   V2 image parser](../devices/esp8266/nonos_v2/image.py), [analysis
   tools](../devices/esp8266/nonos_v2/tools/), and [recovery
-  guide](../devices/esp8266/nonos_v2/RECOVERY.md);
+  guide](../devices/esp8266/nonos_v2/HARDWARE.md);
 - the existing tests, which define accepted wire formats and redaction rules.
 
 Reuse those implementations when the new evidence proves that the format is
@@ -58,7 +58,7 @@ directory:
 devices/
   PLATFORM/
     FIRMWARE_LAYOUT/
-      RECOVERY.md
+      HARDWARE.md
       image.py
       tools/
 ```

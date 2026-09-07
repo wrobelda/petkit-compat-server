@@ -1,9 +1,27 @@
-# ESP8266 non-OS V2 backup and recovery
+# ESP8266 non-OS V2 layout, backup, and recovery
 
-This procedure applies to [supported device profiles](../../README.md) whose profile declares
-`firmware.format` as `esp8266-nonos-v2`. Read the device's `HARDWARE.md` first
-for its serial pads, boot-mode controls, power requirements, flash size, and
-any shared-UART constraints.
+Espressif's non-OS SDK V2 OTA format uses a bootloader and two application
+slots. The bootloader runs one slot while an OTA update normally writes the
+other. Slot offsets and protected flash regions depend on the flash map, so use
+the values from the selected device profile instead of assuming that every V2
+device has the same addresses.
+
+Read the device's `HARDWARE.md` before connecting a serial adapter. That file
+defines its serial pads, boot-mode controls, power requirements, and any UART
+shared with another processor.
+
+## ESP8266 flash layout
+
+The V2 format stores each application as an outer V2 header followed by mapped
+IROM data, an inner V1 image with its RAM segments, an XOR checksum, and the
+SDK CRC32 trailer. The format does not determine the flash size or slot
+addresses.
+
+Each device's `profile.json` defines its real flash size, application slots,
+and safe extents. A safe extent may end before the next application offset
+because RF calibration, SDK parameters, or vendor data can occupy the tail of
+flash. Derive those boundaries from a complete stock dump before adding a
+profile; never infer them only from the size of an application image.
 
 ## Back up the complete stock flash
 
@@ -21,8 +39,7 @@ cmp stock-a.bin stock-b.bin
 sha256sum stock-a.bin stock-b.bin
 ```
 
-On macOS, use `shasum -a 256 stock-a.bin stock-b.bin` instead of
-`sha256sum`.
+On macOS, use `shasum -a 256 stock-a.bin stock-b.bin` instead of `sha256sum`.
 
 The files must match the profile's `firmware.flash_size`, `cmp` must produce no
 output, and both hashes must match. Store one copy away from the development
@@ -45,14 +62,13 @@ Every application must report valid segment and SDK CRC32 checksums.
 
 ## Restore one application slot
 
-The non-OS OTA layout has two physical application slots. The bootloader runs
-one while an OTA update normally writes the other. A slot-only restore leaves
-the other application and all system data unchanged.
+A slot-only restore leaves the other application and all system data
+unchanged. Use it only when the affected slot is known and every other region
+is known to be intact. Identify the slot from the OTA target, boot log, or
+flash map; firmware age does not identify its physical location.
 
-Use this method only when the affected slot is known and every other region is
-known to be intact. Identify the slot from the OTA target, boot log, or flash
-map; firmware age does not identify its physical location. Write the extracted
-image at the matching `firmware.slots[].offset` from the profile:
+Write the extracted image at the matching `firmware.slots[].offset` from the
+profile:
 
 ```sh
 esptool --chip esp8266 --port PORT --baud 460800 write-flash \
