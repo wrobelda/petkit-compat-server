@@ -71,23 +71,11 @@ putting the password itself in shell history.
 On Linux with NetworkManager:
 
 ```bash
-export PETKIT_WIFI_SSID='<target Wi-Fi name>'
-PETKIT_WIFI_CONNECTION="$(
-  while IFS= read -r uuid; do
-    if [ "$(nmcli --get-values 802-11-wireless.ssid connection show uuid "$uuid" 2>/dev/null)" = "$PETKIT_WIFI_SSID" ]; then
-      printf '%s\n' "$uuid"
-      break
-    fi
-  done < <(nmcli --get-values UUID connection show)
-)"
-test -n "$PETKIT_WIFI_CONNECTION" || {
-  echo "No saved NetworkManager connection found for $PETKIT_WIFI_SSID" >&2
-  false
-}
-export PETKIT_WIFI_PASSWORD="$(nmcli --show-secrets \
+export ESPHOME_WIFI_SSID='<target Wi-Fi name>'
+export ESPHOME_WIFI_PASSWORD="$(nmcli --show-secrets \
   --get-values 802-11-wireless-security.psk \
-  connection show uuid "$PETKIT_WIFI_CONNECTION")"
-test -n "$PETKIT_WIFI_PASSWORD" || {
+  connection show "$ESPHOME_WIFI_SSID")"
+test -n "$ESPHOME_WIFI_PASSWORD" || {
   echo "The saved NetworkManager connection has no Wi-Fi password" >&2
   false
 }
@@ -96,9 +84,9 @@ test -n "$PETKIT_WIFI_PASSWORD" || {
 On macOS:
 
 ```sh
-export PETKIT_WIFI_SSID='<target Wi-Fi name>'
-export PETKIT_WIFI_PASSWORD="$(security find-generic-password \
-  -D 'AirPort network password' -a "$PETKIT_WIFI_SSID" -gw)"
+export ESPHOME_WIFI_SSID='<target Wi-Fi name>'
+export ESPHOME_WIFI_PASSWORD="$(security find-generic-password \
+  -D 'AirPort network password' -a "$ESPHOME_WIFI_SSID" -gw)"
 ```
 
 Both commands use the saved Wi-Fi network. NetworkManager may ask for
@@ -111,7 +99,7 @@ In the same terminal where the two variables were set, run:
 ```sh
 python3 provision_petkit_device.py \
   --profile PROFILE_PATH \
-  --ssid "$PETKIT_WIFI_SSID" \
+  --ssid "$ESPHOME_WIFI_SSID" \
   --server 'YOUR_COMPUTER_API_URL' \
   --timezone '<UTC offset in hours>' \
   --locale '<IANA time zone>' \
@@ -124,7 +112,7 @@ Remove the password from the shell environment after the provisioning command
 finishes:
 
 ```sh
-unset PETKIT_WIFI_PASSWORD
+unset ESPHOME_WIFI_PASSWORD
 ```
 
 ### 6. Reconnect the computer and confirm the device

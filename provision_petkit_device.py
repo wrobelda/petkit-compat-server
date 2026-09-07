@@ -174,7 +174,7 @@ def main() -> None:
         server = validate_server(args.server, softap["server_path_suffix"])
     except argparse.ArgumentTypeError as error:
         raise SystemExit(str(error)) from error
-    password = os.environ.get("PETKIT_WIFI_PASSWORD")
+    password = os.environ.get("ESPHOME_WIFI_PASSWORD")
     if args.send and password is None:
         password = getpass.getpass("Target Wi-Fi password: ")
     if password is None:
