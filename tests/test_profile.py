@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from petkit_compat.profile import load_profile
+from petkit_compat.profile import discover_fixture_paths, load_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,11 +58,10 @@ class ProfileTest(unittest.TestCase):
                 )
             )
 
-    def test_rejects_absolute_fixture_path(self) -> None:
-        with self.assertRaisesRegex(ValueError, "relative paths"):
-            self.load_changed(
-                lambda profile: profile.update(fixtures=["/private.json"])
-            )
+    def test_discovers_fixtures_from_root_to_device(self) -> None:
+        paths = discover_fixture_paths(PROFILE)
+        self.assertEqual(paths[0], ROOT / "fixtures.json")
+        self.assertEqual(paths[-1], PROFILE.parent / "fixtures.json")
 
 
 if __name__ == "__main__":

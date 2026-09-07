@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from petkit_compat.firmware import load_ota_image, ota_image_digest
-from petkit_compat.profile import load_profile
+from petkit_compat.profile import discover_fixture_paths, load_profile
 
 
 LOG = logging.getLogger("petkit.compat")
@@ -384,8 +384,10 @@ def main() -> None:
         fixture_paths = (
             [args.fixtures]
             if args.fixtures
-            else [args.profile.parent / path for path in profile["fixtures"]]
+            else discover_fixture_paths(args.profile)
         )
+        if not fixture_paths:
+            raise ValueError("no fixtures.json found for the selected profile")
         fixtures: dict[str, dict[str, Any]] = {}
         for fixture_path in fixture_paths:
             fixtures.update(load_fixtures(fixture_path))

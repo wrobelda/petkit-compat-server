@@ -7,6 +7,28 @@ from pathlib import Path
 from typing import Any
 
 
+def discover_fixture_paths(profile_path: Path) -> list[Path]:
+    """Return fixtures.json files from the repository root to the profile."""
+    repository_root = Path(__file__).resolve().parent.parent
+    profile_directory = profile_path.resolve().parent
+    try:
+        relative_directory = profile_directory.relative_to(repository_root)
+    except ValueError:
+        candidate = profile_directory / "fixtures.json"
+        return [candidate] if candidate.is_file() else []
+
+    directories = [repository_root]
+    current = repository_root
+    for part in relative_directory.parts:
+        current /= part
+        directories.append(current)
+    return [
+        directory / "fixtures.json"
+        for directory in directories
+        if (directory / "fixtures.json").is_file()
+    ]
+
+
 def load_profile(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         profile = json.load(handle)
@@ -18,7 +40,6 @@ def load_profile(path: Path) -> dict[str, Any]:
         safe_fields = http["safe_form_fields"]
         safe_state_fields = http["safe_state_fields"]
         ota_offer = http["ota_offer"]
-        fixtures = profile["fixtures"]
         softap = profile["softap"]
         keys = softap["keys"]
         payload_fields = softap["payload_fields"]
@@ -45,11 +66,6 @@ def load_profile(path: Path) -> dict[str, Any]:
         isinstance(item, str) for item in safe_state_fields
     ):
         raise ValueError("safe_state_fields must be a list of strings")
-    if not isinstance(fixtures, list) or not fixtures or not all(
-        isinstance(item, str) and item and not Path(item).is_absolute()
-        for item in fixtures
-    ):
-        raise ValueError("fixtures must be a non-empty list of relative paths")
     if not isinstance(ota_offer, dict):
         raise ValueError("http.ota_offer must be an object")
     for key in ("firmware_id", "module_version"):

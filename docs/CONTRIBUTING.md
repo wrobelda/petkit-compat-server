@@ -75,11 +75,13 @@ devices/PLATFORM/FIRMWARE_LAYOUT/DEVICE/
   tools/
 ```
 
-A profile lists fixture files in merge order. Put routes shared by every
-profile in the repository-level [`fixtures.json`](../fixtures.json), or add a
-`fixtures.json` at the narrowest platform or firmware-layout directory that
-shares them. Keep device-specific routes beside the device profile. A later
-file overrides an earlier route.
+Fixture inheritance follows the directory tree automatically. Put routes
+shared by every profile in the repository-level
+[`fixtures.json`](../fixtures.json), or add a `fixtures.json` at the narrowest
+platform or firmware-layout directory that shares them. Keep device-specific
+routes beside the device profile. The server loads files from the repository
+root down to the profile directory, so a more specific file overrides an
+earlier route. A new profile does not need to list those files.
 
 Only add a shared helper after at least one device needs it and its boundary is
 clear. Device-specific constants belong in `profile.json` or the device's
