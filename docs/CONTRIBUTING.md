@@ -95,8 +95,9 @@ request-field allowlist so logs expose field names and bounded operational
 state, never credential values.
 
 Document each profile value in the device README. A normal user must be able to
-copy the profile path, fixture path, and server URL into the numbered workflow
-without understanding the profile schema.
+copy the profile path into the numbered workflow without understanding the
+profile schema. Fixture files are discovered automatically from the selected
+profile's directory and its parent directories.
 
 If the device uses a new provisioning protocol or image format, add that as a
 separate, testable implementation. Do not weaken an existing image validator to
