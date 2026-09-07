@@ -160,7 +160,8 @@ this request. It is a dry run unless
 remain in memory and are not printed.
 
 ```sh
-PETKIT_USERNAME='<account email>' PETKIT_PASSWORD='<account password>' \
+PETKIT_REGION='<account region>' PETKIT_USERNAME='<account email>' \
+  PETKIT_PASSWORD='<account password>' \
   python3 tools/petkit_app_ota_reset.py --device-id DEVICE_ID --send
 ```
 

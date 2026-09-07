@@ -43,6 +43,7 @@ class AppOtaResetTest(unittest.TestCase):
             "PETKIT_USERNAME": "owner@example.test",
             "PETKIT_PASSWORD": "private-password",
             "PETKIT_TIMEZONE": "UTC",
+            "PETKIT_REGION": "us",
         }
         with patch.dict(os.environ, environment, clear=True):
             with patch.object(MODULE, "post_json", return_value=(200, response)) as post:

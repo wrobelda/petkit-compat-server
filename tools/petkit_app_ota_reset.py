@@ -21,6 +21,20 @@ DEFAULT_URL = "https://api.eu-pet.com/6/feedermini/ota_reset"
 API_VERSION = "13.2.1"
 
 
+def local_timezone() -> str:
+    configured = os.environ.get("PETKIT_TIMEZONE") or os.environ.get("TZ")
+    if configured:
+        return configured
+    try:
+        target = os.path.realpath("/etc/localtime")
+        marker = "/zoneinfo/"
+        if marker in target:
+            return target.split(marker, 1)[1]
+    except OSError:
+        pass
+    return "UTC"
+
+
 def base_headers() -> dict[str, str]:
     return {
         "Accept": "application/json",
@@ -38,7 +52,7 @@ def base_headers() -> dict[str, str]:
 def login_form(username: str, password: str, region: str) -> dict[str, str]:
     # Match the current reversed Android client. Petkit expects an MD5 of the
     # password here; TLS protects the request in transit.
-    timezone = os.environ.get("PETKIT_TIMEZONE", "Europe/Warsaw")
+    timezone = local_timezone()
     offset = datetime.datetime.now(ZoneInfo(timezone)).utcoffset()
     timezone_offset = str((offset.total_seconds() if offset else 0) / 3600)
     client = {
@@ -94,7 +108,9 @@ def obtain_session(ota_url: str) -> str:
         raise ValueError(
             "set PETKIT_SESSION, or set both PETKIT_USERNAME and PETKIT_PASSWORD"
         )
-    region = os.environ.get("PETKIT_REGION", "pl").lower()
+    region = os.environ.get("PETKIT_REGION", "").lower()
+    if not region:
+        raise ValueError("set PETKIT_REGION to the Petkit account region")
     login_url = urllib.parse.urljoin(api_root(ota_url), "user/login")
     _status, response = post_json(login_url, login_form(username, password, region), base_headers())
     result = response.get("result")
