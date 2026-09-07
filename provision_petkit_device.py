@@ -45,6 +45,13 @@ def validate_server(value: str, suffix: str) -> str:
     return value
 
 
+def server_from_host(host: str, port: int, suffix: str) -> str:
+    if not host or any(character in host for character in "/?#@"):
+        raise argparse.ArgumentTypeError("server host must be an IP address or hostname")
+    url_host = f"[{host}]" if ":" in host else host
+    return validate_server(f"http://{url_host}:{port}{suffix}", suffix)
+
+
 def recv_exact(sock: socket.socket, size: int) -> bytes:
     chunks: list[bytes] = []
     remaining = size
@@ -149,7 +156,13 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--host")
     result.add_argument("--port", type=int)
     result.add_argument("--ssid", required=True, help="target 2.4 GHz Wi-Fi SSID")
-    result.add_argument("--server", required=True)
+    server = result.add_mutually_exclusive_group(required=True)
+    server.add_argument("--server", help="complete Petkit API URL")
+    server.add_argument(
+        "--server-host",
+        help="address of this computer; the profile supplies the API path",
+    )
+    result.add_argument("--server-port", type=int, default=8080)
     result.add_argument("--timezone", required=True, help="UTC offset in hours")
     result.add_argument("--locale", required=True, help="IANA time zone")
     result.add_argument("--timeout", type=float, default=15.0)
@@ -171,7 +184,15 @@ def main() -> None:
     host = args.host or softap["host"]
     port = args.port or softap["port"]
     try:
-        server = validate_server(args.server, softap["server_path_suffix"])
+        server = (
+            validate_server(args.server, softap["server_path_suffix"])
+            if args.server is not None
+            else server_from_host(
+                args.server_host,
+                args.server_port,
+                softap["server_path_suffix"],
+            )
+        )
     except argparse.ArgumentTypeError as error:
         raise SystemExit(str(error)) from error
     password = os.environ.get("ESPHOME_WIFI_PASSWORD")

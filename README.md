@@ -3,6 +3,9 @@
 This project helps update supported Petkit devices with custom firmware, such
 as ESPHome, without opening the device or using a serial adapter.
 
+The tools require Python 3.10 or newer and use only the Python standard
+library.
+
 The stock Petkit firmware normally sends its network requests to Petkit's
 cloud. This project directs those requests to two tools running on your own
 computer:
@@ -31,10 +34,7 @@ computer:
 ### 1. Select the exact device
 
 Open the [supported-device list](devices/README.md), select the exact model,
-and read its page. Copy these two values from that page:
-
-- `PROFILE_PATH`;
-- `YOUR_COMPUTER_API_URL`.
+and read its page. Copy the `PROFILE_PATH` value from that page.
 
 Do not select a device only because its name or enclosure looks similar.
 
@@ -49,11 +49,28 @@ python3 serve_petkit_api.py --host 0.0.0.0 --port 8080 \
 ```
 
 Leave this terminal running. Make sure TCP port 8080 is allowed through the
-computer's firewall. If possible, test the port from another device on the
-regular Wi-Fi network:
+computer's firewall. Record the computer's address while it is connected to
+the regular Wi-Fi network.
+
+On Linux:
 
 ```sh
-nc -vz YOUR_COMPUTER_IP 8080
+export YOUR_COMPUTER_IP="$(ip -4 route get 192.0.2.1 | sed -n 's/.* src \([^ ]*\).*/\1/p')"
+```
+
+On macOS:
+
+```sh
+export TARGET_WIFI_INTERFACE="$(route get default | awk '/interface:/{print $2}')"
+export YOUR_COMPUTER_IP="$(ipconfig getifaddr "$TARGET_WIFI_INTERFACE")"
+```
+
+Confirm that the variable is non-empty, then test the port from another device
+on the regular Wi-Fi network if possible:
+
+```sh
+test -n "$YOUR_COMPUTER_IP"
+nc -vz "$YOUR_COMPUTER_IP" 8080
 ```
 
 ### 3. Put the Petkit device in setup mode
@@ -100,7 +117,7 @@ In the same terminal where the two variables were set, run:
 python3 provision_petkit_device.py \
   --profile PROFILE_PATH \
   --ssid "$ESPHOME_WIFI_SSID" \
-  --server 'YOUR_COMPUTER_API_URL' \
+  --server-host "$YOUR_COMPUTER_IP" \
   --timezone '<UTC offset in hours>' \
   --locale '<IANA time zone>' \
   --send

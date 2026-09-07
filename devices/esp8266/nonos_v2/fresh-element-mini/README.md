@@ -37,10 +37,10 @@ tracked file.
 
 Use the numbered workflow in the [main README](../../../../README.md) with:
 
-| Placeholder | Value |
-|---|---|
-| `PROFILE_PATH` | `devices/esp8266/nonos_v2/fresh-element-mini/profile.json` |
-| `YOUR_COMPUTER_API_URL` | `http://YOUR_COMPUTER_IP:8080/6/` |
+`PROFILE_PATH` is
+`devices/esp8266/nonos_v2/fresh-element-mini/profile.json`. The profile tells
+the provisioning tool that this device family uses the `/6/` API path, so the
+user supplies only the computer's address through `--server-host`.
 
 The committed fixture lets the stock firmware start and contact the local
 compatibility server, but it does not offer an update. Installing replacement

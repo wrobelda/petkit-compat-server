@@ -82,6 +82,16 @@ class SoftApProvisionTest(unittest.TestCase):
         with self.assertRaises(Exception):
             MODULE.validate_server("http://192.0.2.1:8080/", "/6/")
 
+    def test_server_url_is_built_from_host_and_profile_path(self) -> None:
+        self.assertEqual(
+            MODULE.server_from_host("192.0.2.1", 8080, "/6/"),
+            "http://192.0.2.1:8080/6/",
+        )
+        self.assertEqual(
+            MODULE.server_from_host("2001:db8::1", 8080, "/6/"),
+            "http://[2001:db8::1]:8080/6/",
+        )
+
     def test_wait_uses_profiled_heartbeat_key(self) -> None:
         class FakeSocket:
             def __init__(self, received: bytes) -> None:
