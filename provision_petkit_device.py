@@ -148,10 +148,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--profile", type=Path, required=True)
     result.add_argument("--host")
     result.add_argument("--port", type=int)
-    result.add_argument("--ssid", required=True, help="target 2.4 GHz WLAN SSID")
+    result.add_argument("--ssid", required=True, help="target 2.4 GHz Wi-Fi SSID")
     result.add_argument("--server", required=True)
-    result.add_argument("--timezone", default="2.0", help="UTC offset in hours")
-    result.add_argument("--locale", default="Europe/Warsaw", help="IANA time zone")
+    result.add_argument("--timezone", required=True, help="UTC offset in hours")
+    result.add_argument("--locale", required=True, help="IANA time zone")
     result.add_argument("--timeout", type=float, default=15.0)
     result.add_argument(
         "--send",
@@ -193,7 +193,7 @@ def main() -> None:
     if not args.send:
         return
     if not password:
-        raise SystemExit("target WLAN password must not be empty")
+        raise SystemExit("target Wi-Fi password must not be empty")
     try:
         provision(host, port, payload, args.timeout, softap)
     except (OSError, EOFError, ValueError, RuntimeError) as error:
