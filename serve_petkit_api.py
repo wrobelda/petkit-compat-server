@@ -8,6 +8,7 @@ import email.utils
 import json
 import logging
 import re
+import threading
 import urllib.parse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -21,6 +22,41 @@ from petkit_compat.profile import discover_fixture_paths, load_profile
 LOG = logging.getLogger("petkit.compat")
 DEFAULT_OTA_IMAGE_ROUTE = "/ota/image.bin"
 OTA_IMAGE_URL_PLACEHOLDER = "${OTA_IMAGE_URL}"
+MAX_REQUEST_BODY_BYTES = 1024 * 1024
+MAX_CONCURRENT_REQUESTS = 16
+
+
+class BoundedThreadingHTTPServer(ThreadingHTTPServer):
+    """Threading HTTP server with a fixed upper bound on request workers."""
+
+    daemon_threads = True
+    request_queue_size = MAX_CONCURRENT_REQUESTS
+
+    def __init__(self, *args: object, max_workers: int = MAX_CONCURRENT_REQUESTS, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self._request_slots = threading.BoundedSemaphore(max_workers)
+
+    def process_request(self, request: object, client_address: object) -> None:
+        if not self._request_slots.acquire(blocking=False):
+            try:
+                request.sendall(  # type: ignore[attr-defined]
+                    b"HTTP/1.1 503 Service Unavailable\r\n"
+                    b"Content-Length: 0\r\nConnection: close\r\n\r\n"
+                )
+            finally:
+                self.shutdown_request(request)  # type: ignore[arg-type]
+            return
+        try:
+            super().process_request(request, client_address)  # type: ignore[arg-type]
+        except Exception:
+            self._request_slots.release()
+            raise
+
+    def process_request_thread(self, request: object, client_address: object) -> None:
+        try:
+            super().process_request_thread(request, client_address)  # type: ignore[arg-type]
+        finally:
+            self._request_slots.release()
 
 
 def load_fixtures(path: Path) -> dict[str, dict[str, Any]]:
@@ -223,7 +259,17 @@ class PetkitHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
-        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self._send_json(400, {"error": "invalid content length"})
+            return
+        if length < 0:
+            self._send_json(400, {"error": "invalid content length"})
+            return
+        if length > MAX_REQUEST_BODY_BYTES:
+            self._send_json(413, {"error": "request body too large"})
+            return
         body = self.rfile.read(length)
         LOG.info(json.dumps(request_summary(self, body), separators=(",", ":")))
 
@@ -340,8 +386,8 @@ def make_server(
     profile: dict[str, Any],
     ota_image: bytes | None = None,
     ota_image_route: str = DEFAULT_OTA_IMAGE_ROUTE,
-) -> ThreadingHTTPServer:
-    server = ThreadingHTTPServer((host, port), PetkitHandler)
+) -> BoundedThreadingHTTPServer:
+    server = BoundedThreadingHTTPServer((host, port), PetkitHandler)
     server.fixtures = fixtures  # type: ignore[attr-defined]
     server.profile = profile  # type: ignore[attr-defined]
     server.ota_image = ota_image  # type: ignore[attr-defined]

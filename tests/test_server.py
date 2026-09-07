@@ -107,6 +107,28 @@ class ServerTest(unittest.TestCase):
         self.assertIn(b"HTTP/1.1 200 \r\n", first_read)
         self.assertIn(b"\r\n\r\n{\"result\":{}}", first_read)
 
+    def test_rejects_malformed_content_length(self) -> None:
+        with socket.create_connection(("127.0.0.1", self.server.server_port)) as conn:
+            conn.sendall(
+                b"POST /6/feedermini/dev_ota_check HTTP/1.1\r\n"
+                b"Host: localhost\r\nContent-Length: invalid\r\n"
+                b"Connection: close\r\n\r\n"
+            )
+            response = conn.recv(1460)
+        self.assertIn(b"HTTP/1.1 400 ", response)
+        self.assertIn(b"invalid content length", response)
+
+    def test_rejects_oversized_request_without_reading_body(self) -> None:
+        with socket.create_connection(("127.0.0.1", self.server.server_port)) as conn:
+            conn.sendall(
+                b"POST /6/feedermini/dev_ota_check HTTP/1.1\r\n"
+                b"Host: localhost\r\nContent-Length: 1048577\r\n"
+                b"Connection: close\r\n\r\n"
+            )
+            response = conn.recv(1460)
+        self.assertIn(b"HTTP/1.1 413 ", response)
+        self.assertIn(b"request body too large", response)
+
     def test_ota_check_logs_only_sanitized_versions(self) -> None:
         stream = io.StringIO()
         handler = logging.StreamHandler(stream)
