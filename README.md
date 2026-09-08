@@ -40,6 +40,10 @@ Do not select a device only because its name or enclosure looks similar.
 
 ### 2. Start the update server
 
+The server offers no firmware by default. This step establishes local
+communication; the selected device guide supplies the OTA image and remaining
+installation steps.
+
 Run this command while the computer is connected to the regular Wi-Fi network
 that the Petkit device will use:
 
@@ -75,10 +79,9 @@ nc -vz "$YOUR_COMPUTER_IP" 8080
 
 ### 3. Put the Petkit device in setup mode
 
-Follow the button or power sequence on the selected device page. A temporary
-Wi-Fi network such as `PETKIT_FEEDER_HW2_17BG1234` should appear. Connect the
-computer to that network. The computer will normally lose Internet access until
-provisioning finishes.
+Follow the button or power sequence on the selected device page, then connect
+the computer to the temporary Wi-Fi network named in that guide. The computer
+will normally lose Internet access until provisioning finishes.
 
 ### 4. Load the saved Wi-Fi credentials
 
@@ -146,5 +149,5 @@ Return to the selected device page and follow its firmware instructions.
 
 ## Add support for another device
 
-The installation instructions end above. Development instructions and protocol
-references are in the [contributor guide](docs/CONTRIBUTING.md).
+See the [contributor guide](docs/CONTRIBUTING.md) for device profiles, protocol
+analysis, and tests.
