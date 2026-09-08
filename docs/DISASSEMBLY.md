@@ -14,7 +14,7 @@ Before opening a disassembler, inspect the nearest existing device and layout:
 - [Fresh Element Mini hardware](../devices/esp8266/nonos_v2/fresh-element-mini/HARDWARE.md)
   separates board facts from network behavior;
 - [Fresh Element Mini OTA research](../devices/esp8266/nonos_v2/fresh-element-mini/OTA-RESEARCH.md)
-  records verified update behavior, corrected addresses, and unresolved claims;
+  records update behavior, function addresses, and unresolved claims;
 - [`devices/esp8266/nonos_v2/image.py`](../devices/esp8266/nonos_v2/image.py)
   parses the known V2 container;
 - [`devices/esp8266/nonos_v2/tools/analyze_stock_ota.py`](../devices/esp8266/nonos_v2/tools/analyze_stock_ota.py)
@@ -70,9 +70,17 @@ Petkit ESPHome research.
 
 ## Establish address mappings first
 
-Derive mappings from the container header before naming functions. For the
-known ESP8266 V2 user-bin, irom data starts at file offset `0x10` and maps to
-VMA `0x40200000`:
+Keep three address domains separate:
+
+| Address | What it identifies |
+|---|---|
+| Physical flash offset | A byte's location in the complete flash chip |
+| File offset | A byte's location in the file being analyzed, which may contain only one extracted application |
+| Virtual memory address (VMA) | The address the processor uses to execute code or access mapped data |
+
+Derive the conversion from the container header before naming functions. For
+the stock ESP8266 V2 user-bin mapping used by the Mini analysis helper, IROM
+data starts at file offset `0x10` and maps to VMA `0x40200000`:
 
 ```text
 VMA = 0x40200000 + (file_offset - 0x10)
@@ -81,9 +89,10 @@ file_offset = (VMA - 0x40200000) + 0x10
 
 An absolute irom pointer embedded by the linker can use a different conversion
 from the file offset of the instruction that loads it. Use the existing
-`disassemble.py` mappings, and record both the VMA and file offset for every
-claim. A previous Fresh Element Mini analysis mixed these bases and falsely
-identified a motor-control function as the user2 OTA handler.
+[`devices/esp8266/nonos_v2/tools/disassemble.py`](../devices/esp8266/nonos_v2/tools/disassemble.py)
+mappings, and record both the VMA and file offset for every claim. These are
+analysis mappings for that stock container; derive the mapping separately for
+a newly linked image or another firmware format.
 
 Parse RAM segments separately. Confirm their load addresses, lengths, checksum,
 and overlap rules before disassembling them at their declared addresses.
@@ -102,16 +111,19 @@ processors have their own executable formats, boot metadata, and update rules.
 
 Determine both the source and destination layouts before offering an update.
 An ordinary replacement image may not be valid for the source firmware's OTA
-client, even when both images run on the same chip. As one concrete example,
-[`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome#installation)
-uses a stock-compatible non-OS V2 transition image from a tested
-[ESPHome Kickstart fork](https://github.com/wrobelda/esphome-kickstart) to
-install ESPHome on the [Fresh Element
-Mini](../devices/esp8266/nonos_v2/fresh-element-mini/). The generic transition
-changes are intended for the canonical
-[ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart) project.
-The transition image then replaces the Petkit bootloader with ESPHome's eboot
-V1 layout. Separate staged-migration precedents include
+client, even when both images run on the same chip. The [Fresh Element Mini
+installation](https://github.com/wrobelda/petkit-element-mini-esphome#installation)
+illustrates why a bridge may be needed:
+
+1. Stock OTA accepts a non-OS V2 application and boots it under the vendor layout.
+2. The transition application installs the final factory image and changes
+   the layout from non-OS V2 to eboot V1.
+3. The final firmware uses ordinary ESPHome OTA for later updates.
+
+The generic transition implementation is in the
+[`wrobelda/esphome-kickstart`](https://github.com/wrobelda/esphome-kickstart)
+fork of [ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart).
+Separate staged-migration precedents include
 [Tuya-Convert](https://github.com/ct-Open-Source/tuya-convert) and
 [SonOTA](https://github.com/mirko/SonOTA), but their containers, offsets, and
 trust assumptions are not interchangeable.
