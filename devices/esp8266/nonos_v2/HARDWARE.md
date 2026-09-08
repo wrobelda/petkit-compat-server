@@ -86,8 +86,7 @@ application slot:
 ```sh
 esptool --chip esp8266 --port PORT --baud 460800 write-flash \
   --flash-size FLASH_SIZE 0x0 stock-a.bin
-esptool --chip esp8266 --port PORT verify-flash 0x0 stock-a.bin
 ```
 
 If the adapter or wiring is unreliable at 460800 baud, omit `--baud 460800`.
-After verification, release the boot strap and power-cycle the device.
+After the write succeeds, release the boot strap and power-cycle the device.
