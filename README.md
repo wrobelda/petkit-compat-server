@@ -128,6 +128,13 @@ python3 provision_petkit_device.py \
 
 The Petkit device will leave its temporary network and try to join the target
 network. The computer's connection to the temporary network will then close.
+The command reports `confirmed` when the device acknowledges the final request.
+If the connection closes first, the command reports `commit_outcome_unknown`
+and exits with status 3 because the final request was sent but its result cannot
+be determined on the temporary network. Do not immediately provision the device
+again in that case; reconnect the computer and check the update-server terminal
+as described below.
+
 Remove the password from the shell environment after the provisioning command
 finishes:
 
