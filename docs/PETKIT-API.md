@@ -133,10 +133,10 @@ length followed by a JSON object. Request keys, destination, and payload-field
 names are device profile data.
 
 The configuration payload supplies the target Wi-Fi credentials, hidden
-network flag, device API server URL, timezone, and locale. After the commit
-message, the device leaves its SoftAP, joins the target Wi-Fi network, and
-contacts the configured server. Runtime credentials are redacted from the
-provisioning helper's logs.
+network flag, device API server URL, timezone, and locale. After the
+provisioning tool sends the commit request, the device leaves its SoftAP,
+joins the target Wi-Fi network, and contacts the configured server. Runtime
+credentials are redacted from the provisioning helper's logs.
 
 ## Aliyun MQTT handoff
 
