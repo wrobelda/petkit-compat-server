@@ -307,6 +307,33 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(len(payload), 16)
         conn.close()
 
+    def test_invalid_ota_range_returns_json_416(self) -> None:
+        conn = HTTPConnection("127.0.0.1", self.server.server_port)
+        conn.request(
+            "GET",
+            MODULE.DEFAULT_OTA_IMAGE_ROUTE,
+            headers={"Range": f"bytes={len(self.ota_image)}-"},
+        )
+        response = conn.getresponse()
+        payload = json.loads(response.read())
+        self.assertEqual(response.status, 416)
+        self.assertEqual(
+            response.getheader("Content-Range"), f"bytes */{len(self.ota_image)}"
+        )
+        self.assertIsNone(response.getheader("Server"))
+        self.assertEqual(payload, {"error": "range not satisfiable"})
+        conn.close()
+
+    def test_unsupported_method_returns_json_501(self) -> None:
+        conn = HTTPConnection("127.0.0.1", self.server.server_port)
+        conn.request("PUT", "/unsupported", "")
+        response = conn.getresponse()
+        payload = json.loads(response.read())
+        self.assertEqual(response.status, 501)
+        self.assertIsNone(response.getheader("Server"))
+        self.assertEqual(payload, {"error": "not implemented"})
+        conn.close()
+
     def test_profiled_image_route(self) -> None:
         server = MODULE.make_server(
             "127.0.0.1", 0, {}, self.profile, self.ota_image, "/ota/test.bin"

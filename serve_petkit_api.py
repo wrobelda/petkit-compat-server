@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import email.utils
+from http import HTTPStatus
 import json
 import logging
 import re
@@ -321,6 +322,19 @@ class PetkitHandler(BaseHTTPRequestHandler):
             return
         self._send_json(405, {"error": "method not allowed"})
 
+    def send_error(
+        self,
+        code: int,
+        message: str | None = None,
+        explain: str | None = None,
+    ) -> None:
+        del message, explain
+        try:
+            error = HTTPStatus(code).phrase.lower()
+        except ValueError:
+            error = "http error"
+        self._send_json(code, {"error": error})
+
     def _send_ota_image(self) -> None:
         image = self.server.ota_image  # type: ignore[attr-defined]
         start, end = 0, len(image) - 1
@@ -328,12 +342,12 @@ class PetkitHandler(BaseHTTPRequestHandler):
         if range_header:
             match = re.fullmatch(r"bytes=(\d+)-(\d*)", range_header.strip())
             if not match:
-                self.send_error(416)
+                self._send_range_error(len(image))
                 return
             start = int(match.group(1))
             end = int(match.group(2)) if match.group(2) else end
             if start > end or end >= len(image):
-                self.send_error(416)
+                self._send_range_error(len(image))
                 return
         payload = image[start : end + 1]
         self._send_captured_headers(
@@ -346,6 +360,13 @@ class PetkitHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Range", f"bytes {start}-{end}/{len(image)}")
         self.end_headers()
         self.wfile.write(payload)
+
+    def _send_range_error(self, image_size: int) -> None:
+        encoded = b'{"error":"range not satisfiable"}'
+        self._send_captured_headers(416, "application/json;charset=utf-8", len(encoded))
+        self.send_header("Content-Range", f"bytes */{image_size}")
+        self.end_headers()
+        self.wfile.write(encoded)
 
     def _ota_image_url(self) -> str:
         host = self.connection.getsockname()[0]
