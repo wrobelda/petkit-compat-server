@@ -75,13 +75,20 @@ devices/PLATFORM/FIRMWARE_LAYOUT/DEVICE/
   tools/
 ```
 
-Fixture inheritance follows the directory tree automatically. Put routes
-shared by every profile in the repository-level
-[`fixtures.json`](../fixtures.json), or add a `fixtures.json` at the narrowest
-platform or firmware-layout directory that shares them. Keep device-specific
-routes beside the device profile. The server loads files from the repository
-root down to the profile directory, so a more specific file overrides an
-earlier route. A new profile does not need to list those files.
+### Fixture inheritance
+
+The server discovers `fixtures.json` files along the selected profile's
+directory path, loading them in this order:
+
+1. Repository root: routes shared by all profiles.
+2. Platform directory: routes shared by that processor platform.
+3. Firmware-layout directory: routes shared by that layout.
+4. Device directory: routes specific to the selected device.
+
+A nearer definition overrides an earlier route, so the device profile does
+not need to list fixture files. Place each route at the narrowest level that
+matches the available evidence; repository-wide fixtures live in
+[`fixtures.json`](../fixtures.json).
 
 Only add a shared helper after at least one device needs it and its boundary is
 clear. Device-specific constants belong in `profile.json` or the device's
