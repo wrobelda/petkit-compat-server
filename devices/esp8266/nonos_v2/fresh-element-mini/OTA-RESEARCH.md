@@ -92,11 +92,9 @@ data.
 
 The [V2 image analyzer](../tools/analyze_stock_ota.py) validates and extracts
 these images using layout values from [`profile.json`](profile.json). The
-tested V2 bridge builder is part of the
+V2 bridge builder is part of the
 [`wrobelda/esphome-kickstart`](https://github.com/wrobelda/esphome-kickstart)
-fork rather than this server project; the generic changes are intended for
-the canonical [ESPHome
-Kickstart](https://github.com/libretiny-eu/esphome-kickstart) project.
+fork of [ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart).
 
 The metadata `digest` is the four-byte SDK CRC32 stored after the padded E9
 image, encoded as eight hexadecimal characters for the tested images. No
