@@ -4,12 +4,10 @@ This document records protocol behavior shared by the local compatibility
 tools. A route is not assumed to work for every Petkit product;
 device-specific routes and fields belong in that device's profile.
 
-The current evidence comes from the Fresh Element Mini. The working assumption
-is that other Petkit devices use the same API family, or a product-specific
-subset and version of it, because the route structure separates the API
-version from the device-family name. This document will be revised as
-contributors validate other devices; until then, only the Fresh Element Mini
-profile is confirmed.
+The evidence comes from the Fresh Element Mini. Other Petkit devices may use
+the same API family or a versioned subset, but their behavior must be verified
+before reusing a profile. The route structure separates the API version from
+the device-family name.
 
 ## Device HTTP API
 
@@ -27,17 +25,20 @@ Observed requests carry:
 
 The compatibility server does not validate the signature because it runs on a
 network controlled by the device owner and returns configured local fixtures.
-It never logs authentication-header values, form values, or query values.
+Logs omit authentication headers and query values. Only explicitly allowed,
+bounded operational form fields may appear; credentials remain redacted.
 
-Successful responses use a top-level `result` object. Stock callbacks can be
-sensitive to wire framing in addition to JSON. The newer Fresh Element Mini
-firmware accepted Python's ordinary HTTP/1.0 response, while the older Fresh
-Element Mini firmware rejected every response before its endpoint callback saw
-the body. Reproducing Petkit's
-HTTP/1.1 status line with an empty reason phrase, omitting the `Server` header,
-and sending each short response in one socket write made the older firmware
-process the same fixtures. The server uses this compatible framing for every
-profile.
+Successful responses use a top-level `result` object. HTTP framing also matters:
+older Fresh Element Mini firmware rejects ordinary Python HTTP/1.0 responses
+before the endpoint callback receives the body, while newer firmware accepts
+them.
+
+The compatibility server uses the following framing for all profiles to support
+both firmware generations:
+
+- HTTP/1.1 with an empty reason phrase in the status line;
+- no `Server` header;
+- each short response sent in one socket write.
 
 ## Transport selection
 
@@ -68,10 +69,10 @@ device-info responses can contain the Aliyun product key, device name, device
 secret, region, MQTT host, and instance identifier. These are live credentials
 and must exist only in an ignored local fixture.
 
-The Fresh Element Mini's stock ESP8266 firmware stores and evaluates feeding
-schedules. Its feed-list data uses fields including `items`, `repeats`,
-`nextTick`, `timestamp`, and `amount`; the Fresh Element Mini's motor-controller
-MCU receives immediate dispense commands rather than a schedule table.
+For example, the Fresh Element Mini's feed-list data contains `items`,
+`repeats`, `nextTick`, `timestamp`, and `amount`. Its [feeder firmware
+documentation](https://github.com/wrobelda/petkit-element-mini-esphome/tree/main/esphome#feeding-schedule)
+explains which processor stores and evaluates the schedule.
 
 ## OTA lifecycle
 
@@ -110,13 +111,19 @@ completion, changes the selected slot, and reboots. Image format and slot
 behavior are profile-specific; an ESP32 Petkit device should not be assumed to
 use this layout.
 
-The Fresh Element Mini's stock firmware also keeps a persistent OTA-failure
-counter. Three failed starts prevent another offer from reaching
-`dev_ota_start`, even after a power cycle. This counter is separate from the
-transient in-progress flag and from firmware version comparison. The Petkit
-mobile-app `ota_reset` route described below clears the persistent counter.
-Device-specific image validation and disassembly are documented in the [Fresh Element Mini OTA
-research](../devices/esp8266/nonos_v2/fresh-element-mini/OTA-RESEARCH.md).
+### OTA eligibility and failure state
+
+The Fresh Element Mini has two separate OTA state values:
+
+| State | Lifetime and effect |
+|---|---|
+| Failure counter | Persists across power cycles; a value of three blocks the path to `dev_ota_start` |
+| In-progress flag | Transient state that distinguishes idle, started, and finished updates |
+
+The state-report `ota` field represents the failure counter, not the
+in-progress flag. The Petkit mobile-app `ota_reset` route described below clears
+the counter. Device-specific image checks and handler analysis are in the
+[Fresh Element Mini OTA research][mini-ota].
 
 ## SoftAP provisioning
 
@@ -127,7 +134,7 @@ names are device profile data.
 
 The configuration payload supplies the target Wi-Fi credentials, hidden
 network flag, device API server URL, timezone, and locale. After the commit
-message, the feeder leaves its SoftAP, joins the target Wi-Fi network, and
+message, the device leaves its SoftAP, joins the target Wi-Fi network, and
 contacts the configured server. Runtime credentials are redacted from the
 provisioning helper's logs.
 
@@ -147,11 +154,11 @@ local MQTT replacement.
 
 ## Petkit mobile-app API: reset OTA failures
 
-The observed Petkit mobile-app route `POST /6/feedermini/ota_reset` accepts the
-numeric Petkit device ID in the `deviceId` form field. A successful request caused
-the cloud command path to clear the Fresh Element Mini firmware's persistent
-OTA failure counter. It did not reboot the device. Other device-family routes must be
-confirmed before this helper is generalized beyond `feedermini`.
+The Petkit mobile-app route `POST /6/feedermini/ota_reset` accepts the numeric
+Petkit device ID in the `deviceId` form field. The cloud command clears the
+Fresh Element Mini's persistent OTA-failure counter without rebooting it.
+Other device-family routes require verification before this helper can be
+generalized beyond `feedermini`.
 
 [`tools/petkit_app_ota_reset.py`](../tools/petkit_app_ota_reset.py) implements
 this request. It is a dry run unless
@@ -171,3 +178,5 @@ unset PETKIT_USERNAME PETKIT_PASSWORD
 
 This helper contacts Petkit's live service. It is separate from the local
 provisioning and compatibility-server workflow.
+
+[mini-ota]: ../devices/esp8266/nonos_v2/fresh-element-mini/OTA-RESEARCH.md
