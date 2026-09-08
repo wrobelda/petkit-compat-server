@@ -8,6 +8,7 @@ from pathlib import Path
 import socket
 import sys
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -111,6 +112,60 @@ class SoftApProvisionTest(unittest.TestCase):
         )
         self.assertEqual(MODULE.wait_for_key(sock, 7, 42), {"key": 7})
         self.assertEqual(MODULE.decode_frame(bytes(sock.sent)), {"key": 42})
+
+    def test_provision_reports_confirmed_commit(self) -> None:
+        connection = mock.MagicMock()
+        replies = [
+            {"key": 1},
+            {"key": 2, "payload": {"status": 0}},
+            {"key": 151},
+            {"key": 153},
+        ]
+        with (
+            mock.patch.object(MODULE.socket, "create_connection") as connect,
+            mock.patch.object(MODULE, "wait_for_key", side_effect=replies),
+        ):
+            connect.return_value.__enter__.return_value = connection
+            outcome = MODULE.provision(
+                "192.0.2.1", 8001, {}, 1.0, self.profile["softap"]
+            )
+
+        self.assertIs(outcome, MODULE.ProvisioningOutcome.CONFIRMED)
+
+    def test_provision_reports_timeout_after_commit_as_indeterminate(self) -> None:
+        connection = mock.MagicMock()
+        replies = [
+            {"key": 1},
+            {"key": 2, "payload": {"status": 0}},
+            {"key": 151},
+            socket.timeout("SoftAP disappeared"),
+        ]
+        with (
+            mock.patch.object(MODULE.socket, "create_connection") as connect,
+            mock.patch.object(MODULE, "wait_for_key", side_effect=replies),
+        ):
+            connect.return_value.__enter__.return_value = connection
+            outcome = MODULE.provision(
+                "192.0.2.1", 8001, {}, 1.0, self.profile["softap"]
+            )
+
+        self.assertIs(
+            outcome, MODULE.ProvisioningOutcome.COMMIT_OUTCOME_UNKNOWN
+        )
+
+    def test_provision_preserves_failure_before_commit(self) -> None:
+        connection = mock.MagicMock()
+        with (
+            mock.patch.object(MODULE.socket, "create_connection") as connect,
+            mock.patch.object(
+                MODULE, "wait_for_key", side_effect=socket.timeout("no hello")
+            ),
+        ):
+            connect.return_value.__enter__.return_value = connection
+            with self.assertRaises(socket.timeout):
+                MODULE.provision(
+                    "192.0.2.1", 8001, {}, 1.0, self.profile["softap"]
+                )
 
 
 if __name__ == "__main__":

@@ -9,11 +9,20 @@ import json
 import os
 from pathlib import Path
 import socket
+from enum import Enum
 from typing import Any
 from urllib.parse import urlsplit
 
 from petkit_compat.profile import load_profile
 from petkit_compat.softap import MAX_BODY_BYTES, decode_frame, encode_json, redact
+
+
+COMMIT_OUTCOME_UNKNOWN_EXIT = 3
+
+
+class ProvisioningOutcome(Enum):
+    CONFIRMED = "confirmed"
+    COMMIT_OUTCOME_UNKNOWN = "commit_outcome_unknown"
 
 
 def provisioning_payload(
@@ -122,7 +131,7 @@ def provision(
     payload: dict[str, Any],
     timeout: float,
     softap: dict[str, Any],
-) -> None:
+) -> ProvisioningOutcome:
     keys = softap["keys"]
     heartbeat = keys["heartbeat"]
     with socket.create_connection((host, port), timeout=timeout) as sock:
@@ -145,9 +154,12 @@ def provision(
         send_message(sock, {"key": keys["commit"]})
         try:
             wait_for_key(sock, keys["commit"], heartbeat)
-        except (EOFError, ConnectionResetError):
-            # Stock firmware may leave SoftAP immediately after key 153.
-            log_event("softap_disconnect_after_commit")
+        except (EOFError, OSError):
+            # The device may leave SoftAP before its acknowledgement reaches
+            # the provisioning computer. The commit frame was fully sent, so
+            # the caller must reconcile the device's state on the target LAN.
+            return ProvisioningOutcome.COMMIT_OUTCOME_UNKNOWN
+        return ProvisioningOutcome.CONFIRMED
 
 
 def parser() -> argparse.ArgumentParser:
@@ -216,10 +228,12 @@ def main() -> None:
     if not password:
         raise SystemExit("target Wi-Fi password must not be empty")
     try:
-        provision(host, port, payload, args.timeout, softap)
+        outcome = provision(host, port, payload, args.timeout, softap)
     except (OSError, EOFError, ValueError, RuntimeError) as error:
         raise SystemExit(f"provisioning failed: {error}") from error
-    log_event("softap_provisioned")
+    log_event("softap_provisioning_result", outcome=outcome.value)
+    if outcome is ProvisioningOutcome.COMMIT_OUTCOME_UNKNOWN:
+        raise SystemExit(COMMIT_OUTCOME_UNKNOWN_EXIT)
 
 
 if __name__ == "__main__":
