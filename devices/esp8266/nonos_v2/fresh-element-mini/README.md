@@ -5,7 +5,7 @@ Petkit HTTP API needed to start it on a controlled local network. Petkit calls
 this device `Feedermini` in its API routes, while the Petkit Android app calls
 it `D2`.
 
-The verified workflow can:
+With this profile, the tools can:
 
 - configure the feeder's Wi-Fi network and API server through its SoftAP;
 - answer the stock firmware's startup requests with local fixtures;
@@ -13,7 +13,7 @@ The verified workflow can:
 - serve the image with the byte-range behavior expected by the stock updater;
 - record request metadata without logging credentials or device secrets.
 
-The profile was tested with the ESP8266 Fresh Element Mini. Do not use its
+The profile targets the ESP8266 Fresh Element Mini P530. Do not use its
 flash layout or OTA constraints for another Petkit model without independent
 verification.
 
@@ -35,29 +35,23 @@ tracked file.
 
 ## Values for the installation workflow
 
-Use the numbered workflow in the [main README](../../../../README.md) with:
+Use these values in the [main installation workflow](../../../../README.md#install-a-supported-device):
 
-`PROFILE_PATH` is
-`devices/esp8266/nonos_v2/fresh-element-mini/profile.json`. The profile tells
-the provisioning tool that this device family uses the `/6/` API path, so the
-user supplies only the computer's address through `--server-host`.
+| Setting | Value |
+|---|---|
+| `PROFILE_PATH` | `devices/esp8266/nonos_v2/fresh-element-mini/profile.json` |
+| Target network | 2.4 GHz Wi-Fi |
+| Setup mode | Hold the Wi-Fi/reset button for about five seconds, until the long confirmation beep |
+| Setup network | `PETKIT_FEEDER_...` |
+
+The profile supplies the `/6/` API path, so pass only the computer's address
+through `--server-host`.
 
 The committed fixture lets the stock firmware start and contact the local
 compatibility server, but it does not offer an update. Installing replacement
 firmware also requires the image described under [Offer an OTA
 image](#offer-an-ota-image). Its placeholder device and Aliyun values are not
 usable for continued stock cloud operation.
-
-To enter setup mode, hold the feeder's Wi-Fi/reset button for about five
-seconds until it gives the long confirmation beep. Connect the computer to the
-`PETKIT_FEEDER_...` access point, then run step 4 from the main workflow. The
-target network must use 2.4 GHz Wi-Fi.
-
-If the goal is to keep the stock firmware operating against the local server,
-copy the synthetic fixture to the ignored `local/fixtures/device.json`, set
-permissions to `0600`, and replace its placeholder signup and Aliyun fields
-with values from the owner's private capture. This is not required for the
-ESPHome migration.
 
 ## Offer an OTA image
 
@@ -91,11 +85,19 @@ eboot V1 layout. Install the device-specific ESPHome Kickstart transition image
 first; that image allows the final ESPHome factory image to be installed with
 a safe layout migration. Follow the complete procedure in
 [`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome#installation).
-The tested generic migration implementation currently lives in the
+The generic migration implementation lives in the
 [`wrobelda/esphome-kickstart`](https://github.com/wrobelda/esphome-kickstart)
-fork and is intended for the canonical
-[ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart) project;
-it is not encoded in this device profile.
+fork of [ESPHome Kickstart](https://github.com/libretiny-eu/esphome-kickstart).
+This profile handles the stock API and OTA offer; Kickstart handles the
+non-OS V2 to eboot V1 layout transition.
+
+## Using private stock-service fixtures
+
+ESPHome migration does not require live signup or Aliyun credentials. To
+configure the stock firmware with those identities instead, copy the synthetic
+fixture to the ignored `local/fixtures/device.json`, set permissions to `0600`,
+and replace its placeholder signup and Aliyun fields with values from the
+owner's private capture. Keep the modified fixture outside Git.
 
 ## Logging and failure behavior
 
