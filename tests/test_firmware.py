@@ -1,4 +1,5 @@
 from pathlib import Path
+import struct
 import tempfile
 import sys
 import unittest
@@ -8,10 +9,27 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from petkit_compat.firmware import load_ota_image
+from devices.esp8266.nonos_v2.image import sdk_crc32
 from tests.v2_image import make_v2_image
 
 
 class FirmwareFormatTest(unittest.TestCase):
+    def test_rejects_bad_segment_checksum_with_valid_sdk_crc(self) -> None:
+        profile = {
+            "firmware": {
+                "format": "esp8266-nonos-v2",
+                "slots": [{"size": 1024}, {"size": 1024}],
+            }
+        }
+        image = bytearray(make_v2_image())
+        image[32] ^= 1
+        struct.pack_into("<I", image, len(image) - 4, sdk_crc32(image[:-4]))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad-checksum.bin"
+            path.write_bytes(image)
+            with self.assertRaisesRegex(ValueError, "segment checksum"):
+                load_ota_image(path, profile)
+
     def test_rejects_unknown_profile_format(self) -> None:
         profile = {"firmware": {"format": "unknown-format"}}
         with self.assertRaisesRegex(ValueError, "unsupported firmware format"):

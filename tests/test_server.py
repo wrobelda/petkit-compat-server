@@ -473,6 +473,19 @@ class ServerTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "absolute HTTP paths"):
                 MODULE.load_fixtures(path)
 
+    def test_nearest_fixture_overrides_parent_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory) / "parent.json"
+            child = Path(directory) / "child.json"
+            parent.write_text(
+                '{"/shared":{"body":{"source":"parent"}}}', encoding="utf-8"
+            )
+            child.write_text(
+                '{"/shared":{"body":{"source":"child"}}}', encoding="utf-8"
+            )
+            fixtures = MODULE.merge_fixtures([parent, child])
+            self.assertEqual(fixtures["/shared"]["body"]["source"], "child")
+
 
 if __name__ == "__main__":
     unittest.main()

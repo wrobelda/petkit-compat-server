@@ -82,6 +82,14 @@ def load_fixtures(path: Path) -> dict[str, dict[str, Any]]:
     return fixtures
 
 
+def merge_fixtures(paths: list[Path]) -> dict[str, dict[str, Any]]:
+    """Load fixtures in order so the nearest profile directory wins."""
+    merged: dict[str, dict[str, Any]] = {}
+    for path in paths:
+        merged.update(load_fixtures(path))
+    return merged
+
+
 def validate_ota_route(route: str, api_routes: set[str]) -> str:
     parts = urllib.parse.urlsplit(route)
     if (
@@ -469,9 +477,7 @@ def main() -> None:
         )
         if not fixture_paths:
             raise ValueError("no fixtures.json found for the selected profile")
-        fixtures: dict[str, dict[str, Any]] = {}
-        for fixture_path in fixture_paths:
-            fixtures.update(load_fixtures(fixture_path))
+        fixtures = merge_fixtures(fixture_paths)
     except ValueError as error:
         parser.error(str(error))
     ota_check_route = profile["http"]["ota_check_route"]
