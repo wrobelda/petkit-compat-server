@@ -294,17 +294,26 @@ class ServerTest(unittest.TestCase):
         self.assertRegex(body["result"]["time"], r"^\d{4}-\d{2}-\d{2}T")
 
     def test_root_reports_safe_server_status(self) -> None:
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        MODULE.LOG.addHandler(handler)
+        MODULE.LOG.setLevel(logging.INFO)
         conn = HTTPConnection("127.0.0.1", self.server.server_port)
-        conn.request("GET", "/")
-        response = conn.getresponse()
-        payload = json.loads(response.read())
-        conn.close()
+        try:
+            conn.request("GET", "/")
+            response = conn.getresponse()
+            payload = json.loads(response.read())
+            conn.close()
+        finally:
+            MODULE.LOG.removeHandler(handler)
 
         self.assertEqual(response.status, 200)
         self.assertEqual(payload["status"], "ready")
         self.assertEqual(payload["profile"], "petkit-fresh-element-mini")
         self.assertIsInstance(payload["ota_available"], bool)
         self.assertEqual(set(payload), {"status", "profile", "ota_available"})
+        events = [json.loads(line) for line in stream.getvalue().splitlines()]
+        self.assertEqual(events, [{"event": "readiness_check", "path": "/"}])
 
     def test_ota_image_byte_range(self) -> None:
         conn = HTTPConnection("127.0.0.1", self.server.server_port)

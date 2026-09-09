@@ -324,9 +324,14 @@ class PetkitHandler(BaseHTTPRequestHandler):
         )
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
-        LOG.info(json.dumps(request_summary(self, b""), separators=(",", ":")))
         route = self.path.split("?", 1)[0]
         if route == "/":
+            LOG.info(
+                json.dumps(
+                    {"event": "readiness_check", "path": "/"},
+                    separators=(",", ":"),
+                )
+            )
             self._send_json(
                 200,
                 {
@@ -339,6 +344,7 @@ class PetkitHandler(BaseHTTPRequestHandler):
                 },
             )
             return
+        LOG.info(json.dumps(request_summary(self, b""), separators=(",", ":")))
         if route == self.server.ota_image_route and self.server.ota_image is not None:  # type: ignore[attr-defined]
             self._send_ota_image()
             return
@@ -509,8 +515,17 @@ def main() -> None:
         action="store_true",
         help="validate fixtures and OTA image, then exit without listening",
     )
+    parser.add_argument(
+        "--event-log",
+        type=Path,
+        help="also append structured server events to this file",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if args.event_log is not None:
+        event_handler = logging.FileHandler(args.event_log, encoding="utf-8")
+        event_handler.setFormatter(logging.Formatter("%(message)s"))
+        LOG.addHandler(event_handler)
     try:
         profile = load_profile(args.profile)
         fixture_paths = (
