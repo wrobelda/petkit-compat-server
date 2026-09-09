@@ -391,6 +391,11 @@ class PetkitHandler(BaseHTTPRequestHandler):
         self.wfile.flush()
         with self.server.ota_range_lock:  # type: ignore[attr-defined]
             ranges = self.server.ota_served_ranges  # type: ignore[attr-defined]
+            # A resume offset means the OTA client retained the preceding
+            # bytes, even if its earlier connection closed before the server
+            # could record that response as complete.
+            if start > 0:
+                ranges.append((0, start - 1))
             ranges.append((start, end))
             merged: list[tuple[int, int]] = []
             for range_start, range_end in sorted(ranges):
