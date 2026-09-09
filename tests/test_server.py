@@ -307,6 +307,31 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(len(payload), 16)
         conn.close()
 
+    def test_complete_ota_image_transfer_is_logged(self) -> None:
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        MODULE.LOG.addHandler(handler)
+        MODULE.LOG.setLevel(logging.INFO)
+        try:
+            conn = HTTPConnection("127.0.0.1", self.server.server_port)
+            conn.request("GET", MODULE.DEFAULT_OTA_IMAGE_ROUTE)
+            response = conn.getresponse()
+            self.assertEqual(response.read(), self.ota_image)
+            conn.close()
+        finally:
+            MODULE.LOG.removeHandler(handler)
+
+        events = [
+            json.loads(line)
+            for line in stream.getvalue().splitlines()
+            if line.startswith("{")
+        ]
+        completion = next(
+            event for event in events if event.get("event") == "ota_transfer_complete"
+        )
+        self.assertEqual(completion["body_bytes"], len(self.ota_image))
+        self.assertTrue(completion["image_complete"])
+
     def test_invalid_ota_range_returns_json_416(self) -> None:
         conn = HTTPConnection("127.0.0.1", self.server.server_port)
         conn.request(

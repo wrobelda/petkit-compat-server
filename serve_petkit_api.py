@@ -368,6 +368,33 @@ class PetkitHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Range", f"bytes {start}-{end}/{len(image)}")
         self.end_headers()
         self.wfile.write(payload)
+        self.wfile.flush()
+        with self.server.ota_range_lock:  # type: ignore[attr-defined]
+            ranges = self.server.ota_served_ranges  # type: ignore[attr-defined]
+            ranges.append((start, end))
+            merged: list[tuple[int, int]] = []
+            for range_start, range_end in sorted(ranges):
+                if merged and range_start <= merged[-1][1] + 1:
+                    merged[-1] = (
+                        merged[-1][0],
+                        max(merged[-1][1], range_end),
+                    )
+                else:
+                    merged.append((range_start, range_end))
+            ranges[:] = merged
+            image_complete = len(merged) == 1 and merged[0] == (0, len(image) - 1)
+        LOG.info(
+            json.dumps(
+                {
+                    "event": "ota_transfer_complete",
+                    "path": self.server.ota_image_route,  # type: ignore[attr-defined]
+                    "range": f"bytes={start}-{end}",
+                    "body_bytes": len(payload),
+                    "image_complete": image_complete,
+                },
+                separators=(",", ":"),
+            )
+        )
 
     def _send_range_error(self, image_size: int) -> None:
         encoded = b'{"error":"range not satisfiable"}'
@@ -437,6 +464,8 @@ def make_server(
         ota_image_route, set(fixtures) | profile_routes(profile)
     )
     server.ota_offer_completed = False  # type: ignore[attr-defined]
+    server.ota_served_ranges = []  # type: ignore[attr-defined]
+    server.ota_range_lock = threading.Lock()  # type: ignore[attr-defined]
     server.request_read_timeout = request_read_timeout  # type: ignore[attr-defined]
     return server
 
