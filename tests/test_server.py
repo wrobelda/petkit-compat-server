@@ -330,6 +330,8 @@ class ServerTest(unittest.TestCase):
         conn.close()
 
     def test_complete_ota_image_transfer_is_logged(self) -> None:
+        with self.server.ota_range_lock:
+            self.server.ota_served_ranges.clear()
         stream = io.StringIO()
         handler = logging.StreamHandler(stream)
         MODULE.LOG.addHandler(handler)
@@ -354,7 +356,7 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(completion["body_bytes"], len(self.ota_image))
         self.assertTrue(completion["image_complete"])
 
-    def test_resumed_tail_confirms_the_retained_image_prefix(self) -> None:
+    def test_resumed_tail_does_not_infer_the_retained_image_prefix(self) -> None:
         with self.server.ota_range_lock:
             self.server.ota_served_ranges.clear()
         stream = io.StringIO()
@@ -366,10 +368,10 @@ class ServerTest(unittest.TestCase):
             conn.request(
                 "GET",
                 MODULE.DEFAULT_OTA_IMAGE_ROUTE,
-                headers={"Range": "bytes=16-"},
+                headers={"Range": f"bytes={len(self.ota_image) - 1}-"},
             )
             response = conn.getresponse()
-            self.assertEqual(response.read(), self.ota_image[16:])
+            self.assertEqual(response.read(), self.ota_image[-1:])
             conn.close()
         finally:
             MODULE.LOG.removeHandler(handler)
@@ -382,7 +384,7 @@ class ServerTest(unittest.TestCase):
         completion = next(
             event for event in events if event.get("event") == "ota_transfer_complete"
         )
-        self.assertTrue(completion["image_complete"])
+        self.assertFalse(completion["image_complete"])
 
     def test_invalid_ota_range_returns_json_416(self) -> None:
         conn = HTTPConnection("127.0.0.1", self.server.server_port)
