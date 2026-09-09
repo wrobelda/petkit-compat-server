@@ -325,7 +325,21 @@ class PetkitHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         LOG.info(json.dumps(request_summary(self, b""), separators=(",", ":")))
-        if self.path.split("?", 1)[0] == self.server.ota_image_route and self.server.ota_image is not None:  # type: ignore[attr-defined]
+        route = self.path.split("?", 1)[0]
+        if route == "/":
+            self._send_json(
+                200,
+                {
+                    "status": "ready",
+                    "profile": self.server.profile["name"],  # type: ignore[attr-defined]
+                    "ota_available": bool(
+                        self.server.ota_image is not None  # type: ignore[attr-defined]
+                        and not self.server.ota_offer_completed  # type: ignore[attr-defined]
+                    ),
+                },
+            )
+            return
+        if route == self.server.ota_image_route and self.server.ota_image is not None:  # type: ignore[attr-defined]
             self._send_ota_image()
             return
         self._send_json(405, {"error": "method not allowed"})
