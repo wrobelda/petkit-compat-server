@@ -82,8 +82,8 @@ The stock firmware downloads an OTA into its inactive user-bin slot and changes
 the selected slot only after validation. Do not offer a normal ESPHome image
 directly: the stock bootloader expects a V2 user-bin and cannot boot ESPHome's
 eboot V1 layout. Install the device-specific ESPHome Kickstart transition image
-first; that image allows the final ESPHome factory image to be installed with
-a safe layout migration. Follow the complete procedure in
+first. Kickstart then converts itself to the eboot layout, after which ordinary
+ESPHome OTA installs the feeder firmware. Follow the complete procedure in
 [`wrobelda/petkit-element-mini-esphome`](https://github.com/wrobelda/petkit-element-mini-esphome#installation).
 The generic migration implementation lives in the
 [`wrobelda/esphome-kickstart`](https://github.com/wrobelda/esphome-kickstart)
